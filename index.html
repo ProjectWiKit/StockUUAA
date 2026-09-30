@@ -209,12 +209,20 @@
     <div id="tab-t3" class="tab-content hidden">
       <div class="card">
         <h3>📥 คืนอุปกรณ์เข้าคลัง</h3>
-        <div class="field"><label>รหัสไซท์งานอ้างอิง (Site ID)</label><input type="text" id="returnSiteInput" placeholder="กรอก Site ID ที่เคยเบิก" oninput="loadReturnItems();saveState()"></div>
-        <table>
-          <thead><tr><th>รหัส</th><th>ชื่ออุปกรณ์</th><th>ค้างคืน</th><th>จัดการ</th></tr></thead>
-          <tbody id="returnTableBody"><tr><td colspan="4" class="empty">กรุณากรอกรหัสไซท์งานเพื่อดึงรายการ</td></tr></tbody>
-        </table>
-        <button id="returnBtn" class="btn-success" style="margin-top:14px" onclick="submitReturn()">ยืนยันการคืนเข้าคลัง</button>
+        <div class="field"><label>รหัสไซท์งานอ้างอิง (Site ID)</label><input type="text" id="returnSiteInput" placeholder="พิมพ์ Site ID (บางส่วนได้) หรือเว้นว่างเพื่อดูทั้งหมด" oninput="onReturnSearch()"></div>
+        <div class="hint" style="text-align:left;margin:-4px 0 10px">พิมพ์บางส่วนได้ — กดเข้าไซต์เพื่อดูอุปกรณ์ที่ยืมไปเป็นชุดเดียว</div>
+        <div id="siteList" class="stock-grid"></div>
+        <div id="siteDetail" class="hidden">
+          <div class="row" style="align-items:center;margin-bottom:6px">
+            <div><h4 id="siteDetailTitle" style="margin:0;font-size:14px"></h4></div>
+            <div style="text-align:right"><button class="btn-ghost btn-sm" onclick="backToSites()">← กลับรายชื่อไซต์</button></div>
+          </div>
+          <table>
+            <thead><tr><th>รหัส</th><th>ชื่ออุปกรณ์</th><th>ค้างคืน</th><th>จัดการ</th></tr></thead>
+            <tbody id="returnTableBody"><tr><td colspan="4" class="empty">-</td></tr></tbody>
+          </table>
+          <button id="returnBtn" class="btn-success" style="margin-top:14px" onclick="submitReturn()">ยืนยันการคืนไซต์นี้เข้าคลัง</button>
+        </div>
       </div>
     </div>
   </div>
@@ -248,6 +256,7 @@ function saveState() {
       stockSearch: $("stockSearch").value,
       stockFilterCat: stockFilterCat,
       catSel: $("catSelect").value,
+      selectedSite: selectedSiteKey,
       cart: cart
     }));
   } catch (e) { /* โหมดไม่ระบุตัวตน — ข้ามการจำสถานะ */ }
@@ -441,46 +450,110 @@ function renderStock() {
   }).join("");
 }
 
-/* ---------- Return (ยอดค้างคืนสุทธิ = เบิก - คืนแล้ว) ---------- */
-function loadReturnItems() {
-  const site = $("returnSiteInput").value.trim().toLowerCase();
-  const tb = $("returnTableBody");
-  if (!site) {
-    returnCart = [];
-    tb.innerHTML = '<tr><td colspan="4" class="empty">กรุณากรอกรหัสไซท์งานเพื่อดึงรายการ</td></tr>';
-    return;
-  }
-  const borrowed = {}, returned = {}, names = {};
-  globalLogs
-    .filter((l) => l.siteId && l.siteId.toLowerCase() === site)
-    .forEach((l) => {
-      if (!l.stockId) return;
-      if (!names[l.stockId]) names[l.stockId] = l.itemName || l.stockId;
-      const q = parseInt(l.qty, 10) || 0;
-      if (l.returnType.includes(LOG_BORROW)) borrowed[l.stockId] = (borrowed[l.stockId] || 0) + q;
-      else if (l.returnType.includes(LOG_RETURN)) returned[l.stockId] = (returned[l.stockId] || 0) + q;
-    });
-  returnCart = Object.keys(borrowed)
-    .map((id) => ({ id, name: names[id] || id, qty: borrowed[id] - (returned[id] || 0) }))
-    .filter((x) => x.qty > 0);
+/* ---------- Return (2 ชั้น) ----------
+   ชั้น 1: รายชื่อไซต์ที่ค้างคืน (พิมพ์บางส่วนค้นได้ / เว้นว่าง = ทุกไซต์)
+   ชั้น 2: กดเข้าไซต์ -> อุปกรณ์ที่ยืมไปรวมเป็นชุดเดียว (ยอดค้างสุทธิ = เบิก - คืนแล้ว) */
+let selectedSiteKey = null;
+let siteCache = [];
 
-  if (returnCart.length === 0) {
-    tb.innerHTML = '<tr><td colspan="4" class="empty">ไม่พบรายการค้างคืนของไซท์นี้</td></tr>';
-    return;
+function onReturnSearch() {
+  selectedSiteKey = null;
+  loadReturnItems();
+  if (siteCache.length === 1) { // เจอไซต์เดียว -> เปิดชุดอุปกรณ์ทันที
+    selectedSiteKey = siteCache[0].key;
+    loadReturnItems();
   }
-  tb.innerHTML = returnCart.map((o) =>
-    `<tr><td><b>${esc(o.id)}</b></td><td class="left">${esc(o.name)}</td><td><b>${o.qty}</b></td>` +
-    `<td><button class="btn-success btn-sm" onclick="submitSingleReturn('${esc(o.id)}',${o.qty})">คืนชิ้นนี้</button></td></tr>`
-  ).join("");
+  saveState();
 }
 
-async function submitSingleReturn(stockId, qty) {
-  const siteId = $("returnSiteInput").value.trim();
+function selectSite(i) {
+  if (!siteCache[i]) return;
+  selectedSiteKey = siteCache[i].key;
+  loadReturnItems();
+  saveState();
+}
+
+function backToSites() {
+  selectedSiteKey = null;
+  loadReturnItems();
+  saveState();
+}
+
+function loadReturnItems() {
+  const q = $("returnSiteInput").value.trim().toLowerCase();
+  const list = $("siteList"), detail = $("siteDetail"), tb = $("returnTableBody");
+
+  const matched = globalLogs.filter((l) => {
+    if (!l.siteId) return false;
+    return !q || l.siteId.toLowerCase().includes(q);
+  });
+
+  // รวมยอดแยกเป็นราย (ไซต์, รหัสอุปกรณ์)
+  const agg = {};
+  matched.forEach((l) => {
+    if (!l.stockId) return;
+    const siteKey = l.siteId.toLowerCase();
+    if (!agg[siteKey]) agg[siteKey] = { site: l.siteId, borrowed: {}, returned: {}, names: {} };
+    const g = agg[siteKey];
+    if (!g.names[l.stockId]) g.names[l.stockId] = l.itemName || l.stockId;
+    const qty = parseInt(l.qty, 10) || 0;
+    if (l.returnType.includes(LOG_BORROW)) g.borrowed[l.stockId] = (g.borrowed[l.stockId] || 0) + qty;
+    else if (l.returnType.includes(LOG_RETURN)) g.returned[l.stockId] = (g.returned[l.stockId] || 0) + qty;
+  });
+
+  siteCache = [];
+  Object.keys(agg).sort().forEach((siteKey) => {
+    const g = agg[siteKey];
+    const items = [];
+    Object.keys(g.borrowed).sort().forEach((id) => {
+      const left = g.borrowed[id] - (g.returned[id] || 0);
+      if (left > 0) items.push({ id: id, name: g.names[id] || id, site: g.site, qty: left });
+    });
+    if (items.length > 0) {
+      siteCache.push({ key: siteKey, site: g.site, items: items,
+        count: items.length, total: items.reduce((s, x) => s + x.qty, 0) });
+    }
+  });
+
+  if (selectedSiteKey && !siteCache.some((s) => s.key === selectedSiteKey)) selectedSiteKey = null;
+  const current = siteCache.find((s) => s.key === selectedSiteKey);
+
+  if (current) {
+    // ชั้น 2: ชุดอุปกรณ์ของไซต์เดียว
+    list.classList.add("hidden");
+    detail.classList.remove("hidden");
+    $("siteDetailTitle").textContent = `ไซต์ ${current.site} — ${current.count} รายการ (${current.total} ชิ้น)`;
+    returnCart = current.items;
+    tb.innerHTML = returnCart.map((o, i) =>
+      `<tr><td><b>${esc(o.id)}</b></td><td class="left">${esc(o.name)}</td><td><b>${o.qty}</b></td>` +
+      `<td><button class="btn-success btn-sm" onclick="submitSingleReturn(${i})">คืนชิ้นนี้</button></td></tr>`
+    ).join("");
+  } else {
+    // ชั้น 1: รายชื่อไซต์
+    detail.classList.add("hidden");
+    list.classList.remove("hidden");
+    returnCart = [];
+    if (siteCache.length === 0) {
+      list.innerHTML = `<div class="empty">${q ? "ไม่พบไซต์ที่ตรงกับคำค้นนี้" : "ยังไม่มีรายการค้างคืนในระบบ"}</div>`;
+    } else {
+      list.innerHTML = siteCache.map((s, i) =>
+        `<div class="stock-item"><div class="code">SITE</div><div class="name">${esc(s.site)}</div>` +
+        `<div class="meta"><span class="badge b-blue">${s.count} รายการ · ${s.total} ชิ้น</span>` +
+        `<button class="btn-success btn-sm" onclick="selectSite(${i})">เปิดดู ▶</button></div></div>`
+      ).join("");
+    }
+  }
+  saveState();
+}
+
+async function submitSingleReturn(i) {
+  const o = returnCart[i];
+  if (!o) return;
   setLoading("returnBtn", true);
   try {
     const res = await apiPost({
-      action: "returnEquipment", siteId, userName: currentUser,
-      returnItems: [{ id: stockId, returnQty: qty }]
+      action: "returnEquipment", siteId: o.site, userName: currentUser,
+      returnItems: [{ id: o.id, returnQty: o.qty }]
     });
     toast(res.message, res.status === "success" ? "ok" : "err");
     if (res.status === "success") { await loadData(); loadReturnItems(); }
@@ -489,19 +562,19 @@ async function submitSingleReturn(stockId, qty) {
 }
 
 async function submitReturn() {
-  const siteId = $("returnSiteInput").value.trim();
-  if (!siteId) { toast("กรุณากรอกรหัสไซท์งานอ้างอิง", "err"); return; }
-  if (!returnCart || returnCart.length === 0) { toast("ไม่มีรายการค้างคืนในไซท์นี้", "err"); return; }
+  if (!selectedSiteKey || !returnCart || returnCart.length === 0) { toast("ไม่มีรายการค้างคืนในไซต์นี้", "err"); return; }
+  const site = returnCart[0].site;
   const total = returnCart.reduce((s, o) => s + o.qty, 0);
-  if (!confirm(`ยืนยันการคืนอุปกรณ์ทั้งหมด ${returnCart.length} รายการ (${total} ชิ้น) เข้าคลัง?`)) return;
+  if (!confirm(`ยืนยันการคืนอุปกรณ์ของไซต์ ${site} ทั้งหมด ${returnCart.length} รายการ (${total} ชิ้น) เข้าคลัง?`)) return;
+
   setLoading("returnBtn", true);
   try {
     const res = await apiPost({
-      action: "returnEquipment", siteId, userName: currentUser,
+      action: "returnEquipment", siteId: site, userName: currentUser,
       returnItems: returnCart.map((o) => ({ id: o.id, returnQty: o.qty }))
     });
     toast(res.message, res.status === "success" ? "ok" : "err");
-    if (res.status === "success") { returnCart = []; await loadData(); loadReturnItems(); }
+    if (res.status === "success") { returnCart = []; selectedSiteKey = null; await loadData(); loadReturnItems(); }
   } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
   setLoading("returnBtn", false);
 }
@@ -524,6 +597,7 @@ async function restoreSession() {
   if (s.returnSite) $("returnSiteInput").value = s.returnSite;
   if (s.stockSearch) $("stockSearch").value = s.stockSearch;
   if (s.stockFilterCat) stockFilterCat = s.stockFilterCat;
+  if (s.selectedSite) selectedSiteKey = s.selectedSite;
   if (Array.isArray(s.cart)) cart = s.cart.filter((c) => c && c.id);
 
   try {
