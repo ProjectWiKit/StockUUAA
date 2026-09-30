@@ -1,301 +1,543 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JKP Engineering - Field Checklist & Stock Control</title>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <style>
-        :root { --primary: #0284c7; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --bg: #f8fafc; }
-        body { font-family: 'Prompt', sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #1e293b; }
-        .container { max-width: 1000px; background: #fff; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin: auto; }
-        .header { text-align: center; border-bottom: 2px dashed #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 20px; color: #0f172a; }
-        .section { background: #fff; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .input-group { margin-bottom: 12px; }
-        .input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569; }
-        input, select, button { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Prompt', sans-serif; box-sizing: border-box; font-size: 13px; }
-        button { background: var(--primary); color: #fff; font-weight: 600; border: none; cursor: pointer; }
-        button.btn-success { background: var(--success); }
-        .hidden { display: none !important; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: center; }
-        th { background: #f1f5f9; color: #334155; }
-        .nav-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .nav-bar button { flex: 1; background: #e2e8f0; color: #334155; }
-        .nav-bar button.active { background: var(--primary); color: #fff; }
-        .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-        .badge-green { background: #d1fae5; color: #065f46; }
-        .badge-red { background: #fee2e2; color: #991b1b; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JKP Engineering - Field Checklist &amp; Stock Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --primary:#0284c7; --primary-dark:#0369a1; --accent:#6366f1;
+    --success:#10b981; --success-dark:#047857;
+    --danger:#ef4444; --warning:#f59e0b;
+    --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+    --bg:#eef2f7; --card:#ffffff;
+    --radius:16px; --shadow:0 10px 30px rgba(2,132,199,.10);
+  }
+  *{box-sizing:border-box}
+  body{
+    font-family:'Prompt',system-ui,-apple-system,'Segoe UI',sans-serif;
+    background:var(--bg); color:var(--ink); margin:0; padding:20px 14px 48px;
+  }
+  .wrap{max-width:1024px;margin:0 auto}
+
+  /* ===== Hero ===== */
+  .hero{
+    background:linear-gradient(120deg,var(--primary-dark),var(--primary) 55%,var(--accent));
+    color:#fff;border-radius:var(--radius);padding:26px 28px;margin-bottom:20px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  .hero::after{
+    content:"📡";position:absolute;right:22px;top:50%;transform:translateY(-50%);
+    font-size:72px;opacity:.18;
+  }
+  .hero h1{margin:0;font-size:22px;font-weight:700}
+  .hero p{margin:6px 0 0;font-size:13px;opacity:.9;font-weight:300}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);margin-bottom:18px;
+  }
+  .card h3{margin:0 0 14px;font-size:16px}
+  .hidden{display:none!important}
+
+  /* ===== Form ===== */
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}
+  input,select,button{
+    width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;
+    font-family:inherit;font-size:13.5px;background:#fff;color:var(--ink);
+  }
+  input:focus,select:focus{outline:2px solid rgba(2,132,199,.25);border-color:var(--primary)}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row>*{flex:1;min-width:150px}
+  .field{margin-bottom:12px}
+
+  button{
+    background:var(--primary);color:#fff;font-weight:600;border:none;cursor:pointer;
+    transition:transform .06s ease,filter .15s ease;
+  }
+  button:hover{filter:brightness(1.07)}
+  button:active{transform:scale(.98)}
+  button:disabled{opacity:.6;cursor:wait}
+  .btn-success{background:var(--success)}
+  .btn-ghost{background:#e2e8f0;color:#334155}
+  .btn-danger{background:var(--danger)}
+  .btn-sm{width:auto;padding:4px 12px;font-size:12px;border-radius:8px}
+
+  /* ===== Tabs ===== */
+  .tabs{
+    display:flex;gap:8px;background:#fff;border:1px solid var(--line);
+    padding:8px;border-radius:14px;margin-bottom:18px;box-shadow:var(--shadow);flex-wrap:wrap;
+  }
+  .tabs button{flex:1;min-width:180px;background:transparent;color:var(--muted);border-radius:10px}
+  .tabs button.active{background:linear-gradient(120deg,var(--primary),var(--accent));color:#fff}
+
+  /* ===== User bar ===== */
+  .userbar{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    background:#fff;border:1px solid var(--line);border-radius:12px;
+    padding:10px 14px;margin-bottom:18px;box-shadow:var(--shadow);font-size:14px;
+  }
+  .userbar .who{font-weight:600}
+  .role{
+    display:inline-block;font-size:11px;font-weight:600;border-radius:999px;
+    padding:2px 10px;margin-left:8px;vertical-align:middle;
+  }
+  .role.admin{background:#dbeafe;color:#1d4ed8}
+  .role.technician{background:#d1fae5;color:#065f46}
+
+  /* ===== Chips (ตัวกรองหมวด) ===== */
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+  .chip{
+    width:auto;border:1px solid var(--line);background:#f8fafc;color:var(--muted);
+    border-radius:999px;padding:6px 16px;font-size:12.5px;font-weight:600;
+  }
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip .n{opacity:.65;font-weight:400}
+
+  /* ===== Tables ===== */
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+  th,td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:center}
+  th{background:#f1f5f9;color:#334155;font-size:12px;white-space:nowrap}
+  th:first-child{border-radius:10px 0 0 10px} th:last-child{border-radius:0 10px 10px 0}
+  td.left{text-align:left}
+  tbody tr:hover td{background:#f8fafc}
+  .empty{color:var(--muted);padding:18px!important}
+
+  .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+  .b-green{background:#d1fae5;color:#065f46}
+  .b-red{background:#fee2e2;color:#991b1b}
+  .b-blue{background:#dbeafe;color:#1d4ed8}
+  .b-amber{background:#fef3c7;color:#92400e}
+  .b-slate{background:#e2e8f0;color:#475569}
+
+  .stock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:12px}
+  .stock-item{
+    border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff;
+  }
+  .stock-item.low{border-color:#fecaca;background:#fff7f7}
+  .stock-item .code{font-size:11.5px;color:var(--muted);font-weight:600}
+  .stock-item .name{font-weight:600;font-size:13.5px;margin:2px 0 8px}
+  .stock-item .meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+  /* ===== Toast ===== */
+  #toasts{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:min(90vw,360px)}
+  .toast{
+    background:var(--ink);color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;
+    box-shadow:0 10px 25px rgba(0,0,0,.25);animation:slideIn .25s ease;
+  }
+  .toast.ok{background:var(--success-dark)} .toast.err{background:#b91c1c}
+  @keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+  .login-card{max-width:420px;margin:0 auto}
+  .login-card .big{font-size:40px;text-align:center}
+  .hint{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);
+    border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (max-width:560px){ .hero h1{font-size:18px} .hero::after{font-size:48px} }
+</style>
 </head>
 <body>
+<div class="wrap">
 
-<div class="container">
-    <div class="header">
-        <h1>📡 JKP Engineering - ระบบจัดการอุปกรณ์และเช็คลิสต์หน้างาน</h1>
+  <div class="hero">
+    <h1>📡 JKP Engineering</h1>
+    <p>ระบบจัดการอุปกรณ์ · เช็คลิสต์หน้างาน · สต็อกคงคลัง</p>
+  </div>
+
+  <div id="toasts"></div>
+
+  <!-- ============ LOGIN ============ -->
+  <div id="authBox" class="card login-card">
+    <div class="big">🔒</div>
+    <h3 style="text-align:center">เข้าสู่ระบบ</h3>
+    <div class="field"><label>Username</label><input type="text" id="username" placeholder="เช่น admin หรือ M001" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input type="password" id="password" placeholder="รหัสผ่าน" autocomplete="current-password"></div>
+    <button id="loginBtn" onclick="handleLogin()">เข้าสู่ระบบ</button>
+    <div class="hint">บัญชีทดลอง: admin / admin123 · ช่าง: M001 / 1234</div>
+  </div>
+
+  <!-- ============ APP ============ -->
+  <div id="appBox" class="hidden">
+    <div class="userbar">
+      <div class="who"><span id="userInfo"></span><span id="roleBadge" class="role"></span></div>
+      <button class="btn-ghost btn-sm" onclick="handleLogout()">ออกจากระบบ</button>
     </div>
 
-    <!-- Login Box -->
-    <div id="authBox" class="section" style="max-width: 400px; margin: auto;">
-        <h3>🔒 เข้าสู่ระบบ</h3>
-        <div class="input-group"><label>Username:</label><input type="text" id="username"></div>
-        <div class="input-group"><label>Password:</label><input type="password" id="password"></div>
-        <button onclick="handleLogin()">เข้าสู่ระบบ</button>
+    <div class="tabs">
+      <button id="btn-t1" class="active" onclick="switchTab('t1')">🚚 เบิกของ / ตรวจเช็ค</button>
+      <button id="btn-t2" onclick="switchTab('t2')">📦 สต็อกคงเหลือ</button>
+      <button id="btn-t3" onclick="switchTab('t3')">📥 คืนอุปกรณ์</button>
     </div>
 
-    <!-- Main App -->
-    <div id="appBox" class="hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #f1f5f9; padding: 10px 15px; border-radius: 8px;">
-            <div id="userInfo" style="font-weight: 600; font-size: 14px;"></div>
-            <button onclick="handleLogout()" style="width: auto; padding: 5px 12px; background: #64748b; font-size: 12px;">ออกจากระบบ</button>
+    <!-- Tab 1: เบิกของ -->
+    <div id="tab-t1" class="tab-content">
+      <div class="card">
+        <h3>🚚 ฟอร์มตรวจเช็คและเบิกอุปกรณ์ออกหน้างาน</h3>
+        <div class="field"><label>รหัสไซท์งาน (Site ID)</label><input type="text" id="siteIdInput" placeholder="เช่น SITE-01" oninput="saveState()"></div>
+        <div class="card" style="background:#f8fafc;box-shadow:none;margin-bottom:12px">
+          <div class="row">
+            <div><label>หมวดอุปกรณ์</label><select id="catSelect" onchange="onCategoryChange()"></select></div>
+            <div style="flex:2"><label>อุปกรณ์</label><select id="itemSelect" onchange="onItemChange()"><option value="">-- เลือกอุปกรณ์ --</option></select></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div id="serialWrap" class="hidden"><label>รุ่น / Serial No.</label><select id="serialSelect"><option value="">-- เลือกรุ่น/SN --</option></select></div>
+            <div style="max-width:120px"><label>จำนวน</label><input type="number" id="qtyInput" value="1" min="1"></div>
+            <div style="display:flex;align-items:flex-end;max-width:140px"><button class="btn-success" onclick="addItemToCart()">+ เพิ่ม</button></div>
+          </div>
         </div>
-
-        <div class="nav-bar">
-            <button id="btn-t1" class="active" onclick="switchTab('t1')">🚚 เบิกของ/ตรวจเช็คหน้างาน</button>
-            <button id="btn-t2" onclick="switchTab('t2')">📦 สต็อกคงเหลือในคลัง</button>
-            <button id="btn-t3" onclick="switchTab('t3')">📥 คืนอุปกรณ์เข้าคลัง</button>
-        </div>
-
-        <!-- Tab 1: Checklist & Dispatch -->
-        <div id="tab-t1" class="tab-content">
-            <div class="section" style="border-left: 5px solid var(--primary);">
-                <h3>🚚 ฟอร์มตรวจเช็คและเบิกอุปกรณ์ออกหน้างาน</h3>
-                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                    <div style="flex: 1;"><label>รหัสไซท์งาน (Site ID):</label><input type="text" id="siteIdInput" placeholder="เช่น SITE-01"></div>
-                    <div style="flex: 1;"><label>ประเภทงาน:</label><input type="text" id="jobTypeInput" placeholder="ติดตั้ง/ซ่อมบำรุง"></div>
-                </div>
-
-                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 12px;">
-                    <h4 style="margin: 0 0 8px 0; font-size: 13px;">เลือกอุปกรณ์จากคลัง:</h4>
-                    <div style="display: flex; gap: 8px;">
-                        <select id="itemDropdown" style="flex: 2;" onchange="onItemChange()"><option value="">-- เลือกอุปกรณ์ --</option></select>
-                        <select id="serialDropdown" style="flex: 1; display: none;"><option value="">-- เลือกรุ่น/SN --</option></select>
-                        <input type="number" id="qtyInput" value="1" min="1" style="width: 80px; text-align: center;">
-                        <button class="btn-success" style="width: auto;" onclick="addItemToCart()">+ เพิ่ม</button>
-                    </div>
-                </div>
-
-                <table>
-                    <thead><tr><th>รหัส</th><th>ชื่ออุปกรณ์</th><th>จำนวน</th><th>เงื่อนไข</th><th>จัดการ</th></tr></thead>
-                    <tbody id="cartTableBody"><tr><td colspan="5" style="color: #64748b;">ยังไม่มีรายการอุปกรณ์</td></tr></tbody>
-                </table>
-
-                <button class="btn-success" style="margin-top: 15px;" onclick="submitDispatch()">ยืนยันการเบิกอุปกรณ์และตัดสต็อก</button>
-            </div>
-        </div>
-
-        <!-- Tab 2: Stock -->
-        <div id="tab-t2" class="tab-content hidden">
-            <div class="section">
-                <h3>📦 สต็อกคงเหลือปัจจุบัน</h3>
-                <div id="stockContainer">กำลังโหลด...</div>
-            </div>
-        </div>
-
-        <!-- Tab 3: Return -->
-        <div id="tab-t3" class="tab-content hidden">
-            <div class="section" style="border-left: 5px solid var(--success);">
-                <h3>📥 คืนอุปกรณ์เข้าคลัง</h3>
-                <div class="input-group"><label>รหัสไซท์งานอ้างอิง (Site ID):</label><input type="text" id="returnSiteInput" placeholder="กรอก Site ID ที่เคยเบิก" oninput="loadReturnItems()"></div>
-                <table>
-                    <thead><tr><th>รหัส</th><th>ชื่ออุปกรณ์</th><th>จำนวนที่คืน</th><th>จัดการ</th></tr></thead>
-                    <tbody id="returnTableBody"><tr><td colspan="4">กรุณากรอกรหัสไซท์งานเพื่อดึงรายการ</td></tr></tbody>
-                </table>
-                <button class="btn-success" style="margin-top: 15px;" onclick="submitReturn()">ยืนยันการคืนเข้าคลัง</button>
-            </div>
-        </div>
+        <table>
+          <thead><tr><th>รหัส</th><th>ชื่ออุปกรณ์</th><th>จำนวน</th><th>เงื่อนไข</th><th>จัดการ</th></tr></thead>
+          <tbody id="cartTableBody"><tr><td colspan="5" class="empty">ยังไม่มีรายการอุปกรณ์</td></tr></tbody>
+        </table>
+        <button id="dispatchBtn" class="btn-success" style="margin-top:14px" onclick="submitDispatch()">ยืนยันการเบิกอุปกรณ์และตัดสต็อก</button>
+      </div>
     </div>
+
+    <!-- Tab 2: สต็อก -->
+    <div id="tab-t2" class="tab-content hidden">
+      <div class="card">
+        <h3>📦 สต็อกคงเหลือปัจจุบัน</h3>
+        <div class="field" style="margin-bottom:0"><label>ค้นหา</label><input type="text" id="stockSearch" placeholder="พิมพ์รหัสหรือชื่ออุปกรณ์…" oninput="renderStock();saveState()"></div>
+        <div id="catChips" class="chips"></div>
+        <div id="stockGrid" class="stock-grid">กำลังโหลด…</div>
+      </div>
+    </div>
+
+    <!-- Tab 3: คืนของ -->
+    <div id="tab-t3" class="tab-content hidden">
+      <div class="card">
+        <h3>📥 คืนอุปกรณ์เข้าคลัง</h3>
+        <div class="field"><label>รหัสไซท์งานอ้างอิง (Site ID)</label><input type="text" id="returnSiteInput" placeholder="กรอก Site ID ที่เคยเบิก" oninput="loadReturnItems();saveState()"></div>
+        <table>
+          <thead><tr><th>รหัส</th><th>ชื่ออุปกรณ์</th><th>ค้างคืน</th><th>จัดการ</th></tr></thead>
+          <tbody id="returnTableBody"><tr><td colspan="4" class="empty">กรุณากรอกรหัสไซท์งานเพื่อดึงรายการ</td></tr></tbody>
+        </table>
+        <button id="returnBtn" class="btn-success" style="margin-top:14px" onclick="submitReturn()">ยืนยันการคืนเข้าคลัง</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby96Z7Gy6lD3Ckfa5TRjU0uOYYTWciAQt2Jco1NXXAc5sL92p-3AWJNEBKJZEH_3Yam/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
-    let globalStock = {};
-    let globalSerials = {};
-    let globalLogs = [];
-    let cart = [];
-    let returnCart = [];
-    let currentUser = "";
+/* ★★★ ตั้งค่า: วาง Web App URL (/exec) ที่ได้จาก Deploy ทับบรรทัดนี้ ★★★ */
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwBgXQbnbpgA1uwG4Y8Gp4OELiVG245y9J_3Y0tbLMHCk39825maibEX1HSfVjajzdo/exec";
 
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll('.nav-bar button').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-' + tabId).classList.remove('hidden');
-        document.getElementById('btn-' + tabId).classList.add('active');
-    }
+/* คีย์ข้อความใน log ต้องตรงกับ code.gs:
+   เบิก/ยืม -> "ยืมอุปกรณ์ (ต้องนำกลับมาคืน)" | คืนของ -> "📥 คืนอุปกรณ์เข้าคลัง (...)"
+   ตัดขาด  -> "ตัดสต็อกถาวร (ไม่ต้องคืน)" (ไม่ต้องคืน จึงไม่นับยอดค้าง) */
+const LOG_BORROW = "ยืมอุปกรณ์";
+const LOG_RETURN = "คืนอุปกรณ์เข้าคลัง";
+/* หมวดที่ตัดสต็อกถาวร (ต้องตรงกับ PERMANENT_CATEGORIES ใน code.gs) */
+const PERMANENT_CATS = ["อุปกรณ์สายอากาศ"];
 
-    function handleLogin() {
-        let u = document.getElementById("username").value.trim();
-        let p = document.getElementById("password").value.trim();
-        if(!u || !p) { alert("กรุณากรอกข้อมูล"); return; }
+let globalStock = {}, globalSerials = {}, globalLogs = [], globalCats = [];
+let cart = [], returnCart = [], currentUser = "", currentUserRole = "", stockFilterCat = "ALL";
 
-        fetch(WEB_APP_URL, { method: "POST", body: JSON.stringify({ action: "login", username: u, password: p }) })
-        .then(res => res.json()).then(res => {
-            if(res.status === "success") {
-                currentUser = res.name;
-                document.getElementById("userInfo").innerText = `ผู้ใช้งาน: ${res.name} (${res.role})`;
-                document.getElementById("authBox").classList.add("hidden");
-                document.getElementById("appBox").classList.remove("hidden");
-                loadData();
-            } else { alert(res.message); }
-        });
-    }
+/* จำสถานะลงเครื่อง (กด F5 แล้วกลับมาที่เดิมโดยไม่ต้องล็อกอินใหม่) */
+const LS_KEY = "jkp_stock_v2";
+function saveState() {
+  try {
+    const active = document.querySelector(".tabs button.active");
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      user: currentUser ? { name: currentUser, role: currentUserRole } : null,
+      tab: active ? active.id.replace("btn-", "") : "t1",
+      siteId: $("siteIdInput").value,
+      returnSite: $("returnSiteInput").value,
+      stockSearch: $("stockSearch").value,
+      stockFilterCat: stockFilterCat,
+      catSel: $("catSelect").value,
+      cart: cart
+    }));
+  } catch (e) { /* โหมดไม่ระบุตัวตน — ข้ามการจำสถานะ */ }
+}
 
-    function handleLogout() { location.reload(); }
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const isPermanent = (cat) => PERMANENT_CATS.includes(cat);
+const ruleBadge = (returnable) => returnable
+  ? '<span class="badge b-blue">ยืม-คืน</span>'
+  : '<span class="badge b-amber">ตัดขาด</span>';
 
-    function loadData() {
-        return fetch(WEB_APP_URL).then(res => res.json()).then(data => {
-            globalStock = data.stock || {};
-            globalSerials = data.serials || {};
-            globalLogs = data.stockLogs || [];
+function toast(msg, type) {
+  const box = $("toasts");
+  const el = document.createElement("div");
+  el.className = "toast" + (type === "ok" ? " ok" : type === "err" ? " err" : "");
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; setTimeout(() => el.remove(), 320); }, 3400);
+}
 
-            // Render Dropdown
-            let html = '<option value="">-- เลือกอุปกรณ์ --</option>';
-            for(let id in globalStock) {
-                let st = globalStock[id];
-                html += `<option value="${st.id}">[${st.id}] ${st.name} (เหลือ: ${st.qty} ${st.unit})</option>`;
-            }
-            document.getElementById("itemDropdown").innerHTML = html;
+function setLoading(btnId, on, label) {
+  const b = $(btnId);
+  if (!b) return;
+  if (on) { b.dataset.label = b.textContent; b.disabled = true; b.innerHTML = '<span class="spinner"></span>กำลังประมวลผล…'; }
+  else { b.disabled = false; b.textContent = b.dataset.label || label || b.textContent; }
+}
 
-            // Render Stock Table
-            let stockHtml = "";
-            for(let id in globalStock) {
-                let st = globalStock[id];
-                let badge = st.qty <= 2 ? "badge-red" : "badge-green";
-                stockHtml += `<div><b>${st.id}</b> - ${st.name} : <span class="badge ${badge}">${st.qty} ${st.unit}</span></div>`;
-            }
-            document.getElementById("stockContainer").innerHTML = stockHtml || "ไม่มีข้อมูลสต็อก";
-        });
-    }
+async function apiPost(payload) {
+  const res = await fetch(WEB_APP_URL, { method: "POST", body: JSON.stringify(payload) });
+  return res.json();
+}
 
-    function onItemChange() {
-        let id = document.getElementById("itemDropdown").value;
-        let sDropdown = document.getElementById("serialDropdown");
-        if(globalSerials[id] && globalSerials[id].length > 0) {
-            let html = '<option value="">-- เลือกรุ่น/SN --</option>';
-            globalSerials[id].forEach(s => { html += `<option value="${s.serialNo}">${s.serialNo} (คงเหลือ: ${s.qty})</option>`; });
-            sDropdown.innerHTML = html;
-            sDropdown.style.display = "block";
-        } else {
-            sDropdown.style.display = "none";
-            sDropdown.innerHTML = "";
-        }
-    }
+/* ---------- Tabs ---------- */
+function switchTab(tabId) {
+  document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
+  document.querySelectorAll(".tabs button").forEach((el) => el.classList.remove("active"));
+  $("tab-" + tabId).classList.remove("hidden");
+  $("btn-" + tabId).classList.add("active");
+  saveState();
+}
 
-    function addItemToCart() {
-        let id = document.getElementById("itemDropdown").value;
-        let qty = parseInt(document.getElementById("qtyInput").value) || 1;
-        let serial = document.getElementById("serialDropdown").value || "-";
-        if(!id) { alert("กรุณาเลือกอุปกรณ์"); return; }
+/* ---------- Auth ---------- */
+async function handleLogin() {
+  const u = $("username").value.trim(), p = $("password").value.trim();
+  if (!u || !p) { toast("กรุณากรอก username และ password", "err"); return; }
+  setLoading("loginBtn", true);
+  try {
+    const res = await apiPost({ action: "login", username: u, password: p });
+    if (res.status === "success") {
+      currentUser = res.name;
+      currentUserRole = res.role;
+      $("userInfo").textContent = "ผู้ใช้งาน: " + res.name;
+      const badge = $("roleBadge");
+      badge.textContent = res.role === "admin" ? "ผู้ดูแล" : "ช่างภาคสนาม";
+      badge.className = "role " + (res.role === "admin" ? "admin" : "technician");
+      $("authBox").classList.add("hidden");
+      $("appBox").classList.remove("hidden");
+      await loadData();
+      saveState();
+      toast("ยินดีต้อนรับ " + res.name, "ok");
+    } else { toast(res.message, "err"); }
+  } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
+  setLoading("loginBtn", false);
+}
+function handleLogout() { try { localStorage.removeItem(LS_KEY); } catch (e) {} location.reload(); }
+$("password").addEventListener("keydown", (e) => { if (e.key === "Enter") handleLogin(); });
 
-        let item = globalStock[id];
-        cart.push({ id: item.id, name: item.name, qty: qty, serial: serial, category: item.category });
-        renderCart();
-    }
+/* ---------- Load ---------- */
+async function loadData() {
+  const data = await (await fetch(WEB_APP_URL)).json();
+  globalStock = data.stock || {};
+  globalSerials = data.serials || {};
+  globalLogs = data.stockLogs || [];
+  globalCats = (data.categories && data.categories.length)
+    ? data.categories
+    : [...new Set(Object.values(globalStock).map((s) => s.category))];
+  buildCategoryControls();
+  renderStock();
+}
 
-    function renderCart() {
-        let tbody = document.getElementById("cartTableBody");
-        if(cart.length === 0) { tbody.innerHTML = `<tr><td colspan="5">ยังไม่มีรายการ</td></tr>`; return; }
-        let html = "";
-        cart.forEach((c, idx) => {
-            let rule = c.category === "อุปกรณ์สายอากาศ" ? "ตัดสต็อกถาวร" : "ยืม-คืน";
-            html += `<tr><td>${c.id}</td><td style="text-align:left;">${c.name} ${c.serial !== '-' ? '(SN: '+c.serial+')' : ''}</td><td><b>${c.qty}</b></td><td>${rule}</td><td><button onclick="cart.splice(${idx},1);renderCart();" style="background:var(--danger);padding:2px 6px;width:auto;">ลบ</button></td></tr>`;
-        });
-        tbody.innerHTML = html;
-    }
+function buildCategoryControls() {
+  // dropdown หมวดในฟอร์มเบิก (แบบเดียวกับรูป: เลือกหมวดก่อน แล้วค่อยเลือกของ)
+  let html = '<option value="ALL">ทุกหมวด</option>';
+  globalCats.forEach((c) => { html += `<option value="${esc(c)}">${esc(c)}</option>`; });
+  $("catSelect").innerHTML = html;
+  onCategoryChange();
 
-    function submitDispatch() {
-        let siteId = document.getElementById("siteIdInput").value.trim();
-        if(!siteId) { alert("กรุณากรอกรหัสไซท์งาน"); return; }
-        if(cart.length === 0) { alert("กรุณาเลือกอุปกรณ์"); return; }
+  // chips กรองในหน้าสต็อก
+  let chips = `<button class="chip${stockFilterCat === "ALL" ? " active" : ""}" onclick="setStockFilter('ALL')">ทั้งหมด <span class="n">(${Object.keys(globalStock).length})</span></button>`;
+  globalCats.forEach((c) => {
+    const n = Object.values(globalStock).filter((s) => s.category === c).length;
+    chips += `<button class="chip${stockFilterCat === c ? " active" : ""}" onclick="setStockFilter('${esc(c)}')">${esc(c)} <span class="n">(${n})</span></button>`;
+  });
+  $("catChips").innerHTML = chips;
+}
 
-        let usedItems = cart.map(c => ({ id: c.id, deductQty: c.qty, serial: c.serial }));
-        fetch(WEB_APP_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "saveChecklist", siteId: siteId, userName: currentUser, usedItems: usedItems })
-        }).then(res => res.json()).then(res => {
-            alert(res.message);
-            if(res.status === "success") { cart = []; renderCart(); loadData(); }
-        });
-    }
+function setStockFilter(cat) { stockFilterCat = cat; buildCategoryControls(); renderStock(); saveState(); }
 
-    // คีย์ข้อความใน log ต้องตรงกับที่ code.gs เขียนไว้:
-    //   เบิก/ยืม  -> "ยืมอุปกรณ์ (ต้องนำกลับมาคืน)"
-    //   คืนของ   -> "📥 คืนอุปกรณ์เข้าคลัง (...)"
-    //   ตัดขาด  -> "ตัดสต็อกถาวร (ไม่ต้องคืน)"   (ไม่ต้องคืน จึงไม่นับ)
-    const LOG_BORROW = "ยืมอุปกรณ์";
-    const LOG_RETURN = "คืนอุปกรณ์เข้าคลัง";
+function onCategoryChange() {
+  const cat = $("catSelect").value;
+  const ids = Object.keys(globalStock)
+    .filter((id) => cat === "ALL" || globalStock[id].category === cat)
+    .sort();
+  let html = '<option value="">-- เลือกอุปกรณ์ --</option>';
+  ids.forEach((id) => {
+    const st = globalStock[id];
+    html += `<option value="${esc(st.id)}">[${esc(st.id)}] ${esc(st.name)} (เหลือ ${st.qty} ${esc(st.unit)})</option>`;
+  });
+  $("itemSelect").innerHTML = html;
+  onItemChange();
+  saveState();
+}
 
-    function loadReturnItems() {
-        let site = document.getElementById("returnSiteInput").value.trim().toLowerCase();
-        let tbody = document.getElementById("returnTableBody");
-        if(!site) {
-            returnCart = [];
-            tbody.innerHTML = `<tr><td colspan="4">กรุณากรอกรหัสไซท์งานเพื่อดึงรายการ</td></tr>`;
-            return;
-        }
+function onItemChange() {
+  const id = $("itemSelect").value;
+  const wrap = $("serialWrap"), sel = $("serialSelect");
+  const list = id && globalSerials[id] ? globalSerials[id] : [];
+  if (list.length > 0) {
+    sel.innerHTML = '<option value="">-- เลือกรุ่น/SN --</option>' +
+      list.map((s) => `<option value="${esc(s.serialNo)}">${esc(s.serialNo)} (คงเหลือ ${s.qty})</option>`).join("");
+    wrap.classList.remove("hidden");
+  } else { wrap.classList.add("hidden"); sel.innerHTML = ""; }
+}
 
-        // คำนวณยอด "ค้างคืน" = ยอดที่เบิกออก - ยอดที่คืนเข้าแล้ว (สุทธิต่อรหัสอุปกรณ์)
-        let siteLogs = globalLogs.filter(l => l.siteId && l.siteId.toLowerCase() === site);
-        let borrowed = {}, returned = {}, names = {};
+/* ---------- Cart (เบิก) ---------- */
+function addItemToCart() {
+  const id = $("itemSelect").value;
+  const qty = parseInt($("qtyInput").value, 10) || 1;
+  if (!id) { toast("กรุณาเลือกอุปกรณ์", "err"); return; }
+  if (qty < 1) { toast("จำนวนต้องมากกว่า 0", "err"); return; }
+  const item = globalStock[id];
+  const serial = $("serialSelect").value || "-";
+  cart.push({ id: item.id, name: item.name, qty, serial, category: item.category, returnable: item.returnable ?? !isPermanent(item.category) });
+  renderCart();
+  $("qtyInput").value = 1;
+}
 
-        siteLogs.forEach(l => {
-            let key = l.stockId;
-            if(!key) return;
-            if(!names[key]) names[key] = l.itemName || key;
-            let q = parseInt(l.qty) || 0;
-            if(l.returnType.includes(LOG_BORROW)) borrowed[key] = (borrowed[key] || 0) + q;
-            else if(l.returnType.includes(LOG_RETURN)) returned[key] = (returned[key] || 0) + q;
-        });
+function renderCart() {
+  const tb = $("cartTableBody");
+  if (cart.length === 0) { tb.innerHTML = '<tr><td colspan="5" class="empty">ยังไม่มีรายการอุปกรณ์</td></tr>'; }
+  else {
+    tb.innerHTML = cart.map((c, i) =>
+      `<tr><td><b>${esc(c.id)}</b></td>` +
+      `<td class="left">${esc(c.name)}${c.serial !== "-" ? `<br><span class="badge b-slate">SN: ${esc(c.serial)}</span>` : ""}` +
+      `<br><span class="badge b-slate">${esc(c.category)}</span></td>` +
+      `<td><b>${c.qty}</b></td><td>${ruleBadge(c.returnable ?? !isPermanent(c.category))}</td>` +
+      `<td><button class="btn-danger btn-sm" onclick="cart.splice(${i},1);renderCart();">ลบ</button></td></tr>`
+    ).join("");
+  }
+  saveState();
+}
 
-        let outstanding = Object.keys(borrowed)
-            .map(id => ({ id: id, name: names[id] || id, qty: borrowed[id] - (returned[id] || 0) }))
-            .filter(x => x.qty > 0);
+async function submitDispatch() {
+  const siteId = $("siteIdInput").value.trim();
+  if (!siteId) { toast("กรุณากรอกรหัสไซท์งาน", "err"); return; }
+  if (cart.length === 0) { toast("กรุณาเลือกอุปกรณ์อย่างน้อย 1 รายการ", "err"); return; }
+  setLoading("dispatchBtn", true);
+  try {
+    const res = await apiPost({
+      action: "saveChecklist", siteId, userName: currentUser,
+      usedItems: cart.map((c) => ({ id: c.id, deductQty: c.qty, serial: c.serial }))
+    });
+    toast(res.message, res.status === "success" ? "ok" : "err");
+    if (res.status === "success") { cart = []; renderCart(); await loadData(); }
+  } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
+  setLoading("dispatchBtn", false);
+}
 
-        returnCart = outstanding;
+/* ---------- Stock ---------- */
+function renderStock() {
+  const q = ($("stockSearch").value || "").trim().toLowerCase();
+  const grid = $("stockGrid");
+  const ids = Object.keys(globalStock)
+    .filter((id) => stockFilterCat === "ALL" || globalStock[id].category === stockFilterCat)
+    .filter((id) => {
+      if (!q) return true;
+      const st = globalStock[id];
+      return st.id.toLowerCase().includes(q) || st.name.toLowerCase().includes(q);
+    })
+    .sort();
+  if (ids.length === 0) { grid.innerHTML = '<div class="empty">ไม่พบอุปกรณ์ตามเงื่อนไข</div>'; return; }
+  grid.innerHTML = ids.map((id) => {
+    const st = globalStock[id];
+    const low = st.qty <= 2;
+    return `<div class="stock-item${low ? " low" : ""}">` +
+      `<div class="code">${esc(st.id)} · ${esc(st.category)}</div>` +
+      `<div class="name">${esc(st.name)}</div>` +
+      `<div class="meta"><span class="badge ${low ? "b-red" : "b-green"}">${st.qty} ${esc(st.unit)}</span>${ruleBadge(st.returnable ?? !isPermanent(st.category))}</div>` +
+      `</div>`;
+  }).join("");
+}
 
-        if(outstanding.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4">ไม่พบรายการค้างคืนของไซท์นี้</td></tr>`;
-            return;
-        }
+/* ---------- Return (ยอดค้างคืนสุทธิ = เบิก - คืนแล้ว) ---------- */
+function loadReturnItems() {
+  const site = $("returnSiteInput").value.trim().toLowerCase();
+  const tb = $("returnTableBody");
+  if (!site) {
+    returnCart = [];
+    tb.innerHTML = '<tr><td colspan="4" class="empty">กรุณากรอกรหัสไซท์งานเพื่อดึงรายการ</td></tr>';
+    return;
+  }
+  const borrowed = {}, returned = {}, names = {};
+  globalLogs
+    .filter((l) => l.siteId && l.siteId.toLowerCase() === site)
+    .forEach((l) => {
+      if (!l.stockId) return;
+      if (!names[l.stockId]) names[l.stockId] = l.itemName || l.stockId;
+      const q = parseInt(l.qty, 10) || 0;
+      if (l.returnType.includes(LOG_BORROW)) borrowed[l.stockId] = (borrowed[l.stockId] || 0) + q;
+      else if (l.returnType.includes(LOG_RETURN)) returned[l.stockId] = (returned[l.stockId] || 0) + q;
+    });
+  returnCart = Object.keys(borrowed)
+    .map((id) => ({ id, name: names[id] || id, qty: borrowed[id] - (returned[id] || 0) }))
+    .filter((x) => x.qty > 0);
 
-        let html = "";
-        outstanding.forEach((o) => {
-            html += `<tr><td>${o.id}</td><td style="text-align:left;">${o.name}</td><td><b>${o.qty}</b></td>` +
-                    `<td><button onclick="submitSingleReturn('${o.id}', ${o.qty})" style="background:var(--success);padding:2px 8px;width:auto;">คืนชิ้นนี้</button></td></tr>`;
-        });
-        tbody.innerHTML = html;
-    }
+  if (returnCart.length === 0) {
+    tb.innerHTML = '<tr><td colspan="4" class="empty">ไม่พบรายการค้างคืนของไซท์นี้</td></tr>';
+    return;
+  }
+  tb.innerHTML = returnCart.map((o) =>
+    `<tr><td><b>${esc(o.id)}</b></td><td class="left">${esc(o.name)}</td><td><b>${o.qty}</b></td>` +
+    `<td><button class="btn-success btn-sm" onclick="submitSingleReturn('${esc(o.id)}',${o.qty})">คืนชิ้นนี้</button></td></tr>`
+  ).join("");
+}
 
-    function submitSingleReturn(stockId, qty) {
-        let siteId = document.getElementById("returnSiteInput").value.trim();
-        fetch(WEB_APP_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "returnEquipment", siteId: siteId, userName: currentUser, returnItems: [{ id: stockId, returnQty: qty }] })
-        }).then(res => res.json()).then(res => {
-            alert(res.message);
-            if(res.status === "success") { return loadData().then(loadReturnItems); }
-        });
-    }
+async function submitSingleReturn(stockId, qty) {
+  const siteId = $("returnSiteInput").value.trim();
+  setLoading("returnBtn", true);
+  try {
+    const res = await apiPost({
+      action: "returnEquipment", siteId, userName: currentUser,
+      returnItems: [{ id: stockId, returnQty: qty }]
+    });
+    toast(res.message, res.status === "success" ? "ok" : "err");
+    if (res.status === "success") { await loadData(); loadReturnItems(); }
+  } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
+  setLoading("returnBtn", false);
+}
 
-    // คืนอุปกรณ์ทั้งหมดที่ค้างอยู่ของไซท์นี้ในครั้งเดียว (เดิมยังไม่เคยถูกนิยามไว้)
-    function submitReturn() {
-        let siteId = document.getElementById("returnSiteInput").value.trim();
-        if(!siteId) { alert("กรุณากรอกรหัสไซท์งานอ้างอิง"); return; }
-        if(!returnCart || returnCart.length === 0) { alert("ไม่มีรายการค้างคืนในไซท์นี้"); return; }
+async function submitReturn() {
+  const siteId = $("returnSiteInput").value.trim();
+  if (!siteId) { toast("กรุณากรอกรหัสไซท์งานอ้างอิง", "err"); return; }
+  if (!returnCart || returnCart.length === 0) { toast("ไม่มีรายการค้างคืนในไซท์นี้", "err"); return; }
+  const total = returnCart.reduce((s, o) => s + o.qty, 0);
+  if (!confirm(`ยืนยันการคืนอุปกรณ์ทั้งหมด ${returnCart.length} รายการ (${total} ชิ้น) เข้าคลัง?`)) return;
+  setLoading("returnBtn", true);
+  try {
+    const res = await apiPost({
+      action: "returnEquipment", siteId, userName: currentUser,
+      returnItems: returnCart.map((o) => ({ id: o.id, returnQty: o.qty }))
+    });
+    toast(res.message, res.status === "success" ? "ok" : "err");
+    if (res.status === "success") { returnCart = []; await loadData(); loadReturnItems(); }
+  } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
+  setLoading("returnBtn", false);
+}
+/* ---------- จำสถานะข้าม F5: เปิดหน้ามาแล้วล็อกอินค้างไว้ + อยู่ tab เดิม ---------- */
+async function restoreSession() {
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(LS_KEY) || "null"); } catch (e) { s = null; }
+  if (!s || !s.user || !s.user.name) return;
 
-        let total = returnCart.reduce((s, o) => s + o.qty, 0);
-        if(!confirm(`ยืนยันการคืนอุปกรณ์ทั้งหมด ${returnCart.length} รายการ (${total} ชิ้น) เข้าคลัง?`)) return;
+  currentUser = s.user.name;
+  currentUserRole = s.user.role || "";
+  $("userInfo").textContent = "ผู้ใช้งาน: " + currentUser;
+  const badge = $("roleBadge");
+  badge.textContent = currentUserRole === "admin" ? "ผู้ดูแล" : "ช่างภาคสนาม";
+  badge.className = "role " + (currentUserRole === "admin" ? "admin" : "technician");
+  $("authBox").classList.add("hidden");
+  $("appBox").classList.remove("hidden");
 
-        let returnItems = returnCart.map(o => ({ id: o.id, returnQty: o.qty }));
-        fetch(WEB_APP_URL, {
-            method: "POST",
-            body: JSON.stringify({ action: "returnEquipment", siteId: siteId, userName: currentUser, returnItems: returnItems })
-        }).then(res => res.json()).then(res => {
-            alert(res.message);
-            if(res.status === "success") { returnCart = []; return loadData().then(loadReturnItems); }
-        });
-    }
+  if (s.siteId) $("siteIdInput").value = s.siteId;
+  if (s.returnSite) $("returnSiteInput").value = s.returnSite;
+  if (s.stockSearch) $("stockSearch").value = s.stockSearch;
+  if (s.stockFilterCat) stockFilterCat = s.stockFilterCat;
+  if (Array.isArray(s.cart)) cart = s.cart.filter((c) => c && c.id);
+
+  try {
+    await loadData();
+  } catch (e) {
+    toast("โหลดข้อมูลอัตโนมัติไม่สำเร็จ กรุณาตรวจสอบการเชื่อมต่อแล้ว F5 อีกครั้ง", "err");
+    return;
+  }
+  if (s.catSel) { $("catSelect").value = s.catSel; onCategoryChange(); }
+  renderCart();
+  loadReturnItems();
+  switchTab(s.tab || "t1");
+}
+restoreSession();
 </script>
 </body>
 </html>
