@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JKP Engineering - Field Checklist & Stock Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #0284c7; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --bg: #f8fafc; }
+        body { font-family: 'Prompt', sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #1e293b; }
+        .container { max-width: 1000px; background: #fff; padding: 25px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin: auto; }
+        .header { text-align: center; border-bottom: 2px dashed #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 20px; color: #0f172a; }
+        .section { background: #fff; border: 1px solid #e2e8f0; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569; }
+        input, select, button { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Prompt', sans-serif; box-sizing: border-box; font-size: 13px; }
+        button { background: var(--primary); color: #fff; font-weight: 600; border: none; cursor: pointer; }
+        button.btn-success { background: var(--success); }
+        .hidden { display: none !important; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: center; }
+        th { background: #f1f5f9; color: #334155; }
+        .nav-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .nav-bar button { flex: 1; background: #e2e8f0; color: #334155; }
+        .nav-bar button.active { background: var(--primary); color: #fff; }
+        .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>📡 JKP Engineering - ระบบจัดการอุปกรณ์และเช็คลิสต์หน้างาน</h1>
+    </div>
+
+    <!-- Login Box -->
+    <div id="authBox" class="section" style="max-width: 400px; margin: auto;">
+        <h3>🔒 เข้าสู่ระบบ</h3>
+        <div class="input-group"><label>Username:</label><input type="text" id="username"></div>
+        <div class="input-group"><label>Password:</label><input type="password" id="password"></div>
+        <button onclick="handleLogin()">เข้าสู่ระบบ</button>
+    </div>
+
+    <!-- Main App -->
+    <div id="appBox" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #f1f5f9; padding: 10px 15px; border-radius: 8px;">
+            <div id="userInfo" style="font-weight: 600; font-size: 14px;"></div>
+            <button onclick="handleLogout()" style="width: auto; padding: 5px 12px; background: #64748b; font-size: 12px;">ออกจากระบบ</button>
+        </div>
+
+        <div class="nav-bar">
+            <button id="btn-t1" class="active" onclick="switchTab('t1')">🚚 เบิกของ/ตรวจเช็คหน้างาน</button>
+            <button id="btn-t2" onclick="switchTab('t2')">📦 สต็อกคงเหลือในคลัง</button>
+            <button id="btn-t3" onclick="switchTab('t3')">📥 คืนอุปกรณ์เข้าคลัง</button>
+        </div>
+
+        <!-- Tab 1: Checklist & Dispatch -->
+        <div id="tab-t1" class="tab-content">
+            <div class="section" style="border-left: 5px solid var(--primary);">
+                <h3>🚚 ฟอร์มตรวจเช็คและเบิกอุปกรณ์ออกหน้างาน</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                    <div style="flex: 1;"><label>รหัสไซท์งาน (Site ID):</label><input type="text" id="siteIdInput" placeholder="เช่น SITE-01"></div>
+                    <div style="flex: 1;"><label>ประเภทงาน:</label><input type="text" id="jobTypeInput" placeholder="ติดตั้ง/ซ่อมบำรุง"></div>
+                </div>
+
+                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px dashed #cbd5e1; margin-bottom: 12px;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 13px;">เลือกอุปกรณ์จากคลัง:</h4>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="itemDropdown" style="flex: 2;" onchange="onItemChange()"><option value="">-- เลือกอุปกรณ์ --</option></select>
+                        <select id="serialDropdown" style="flex: 1; display: none;"><option value="">-- เลือกรุ่น/SN --</option></select>
+                        <input type="number" id="qtyInput" value="1" min="1" style="width: 80px; text-align: center;">
+                        <button class="btn-success" style="width: auto;" onclick="addItemToCart()">+ เพิ่ม</button>
+                    </div>
+                </div>
+
+                <table>
+                    <thead><tr><th>รหัส</th><th>ชื่ออุปกรณ์</th><th>จำนวน</th><th>เงื่อนไข</th><th>จัดการ</th></tr></thead>
+                    <tbody id="cartTableBody"><tr><td colspan="5" style="color: #64748b;">ยังไม่มีรายการอุปกรณ์</td></tr></tbody>
+                </table>
+
+                <button class="btn-success" style="margin-top: 15px;" onclick="submitDispatch()">ยืนยันการเบิกอุปกรณ์และตัดสต็อก</button>
+            </div>
+        </div>
+
+        <!-- Tab 2: Stock -->
+        <div id="tab-t2" class="tab-content hidden">
+            <div class="section">
+                <h3>📦 สต็อกคงเหลือปัจจุบัน</h3>
+                <div id="stockContainer">กำลังโหลด...</div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Return -->
+        <div id="tab-t3" class="tab-content hidden">
+            <div class="section" style="border-left: 5px solid var(--success);">
+                <h3>📥 คืนอุปกรณ์เข้าคลัง</h3>
+                <div class="input-group"><label>รหัสไซท์งานอ้างอิง (Site ID):</label><input type="text" id="returnSiteInput" placeholder="กรอก Site ID ที่เคยเบิก" oninput="loadReturnItems()"></div>
+                <table>
+                    <thead><tr><th>รหัส</th><th>ชื่ออุปกรณ์</th><th>จำนวนที่คืน</th><th>จัดการ</th></tr></thead>
+                    <tbody id="returnTableBody"><tr><td colspan="4">กรุณากรอกรหัสไซท์งานเพื่อดึงรายการ</td></tr></tbody>
+                </table>
+                <button class="btn-success" style="margin-top: 15px;" onclick="submitReturn()">ยืนยันการคืนเข้าคลัง</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz0yzq_uc1pLSQx0qHyEvSqEl2q9CmsVWVfJMP7K6VwqRp60_p_F7QO1DyILLGMY8MI/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
+    let globalStock = {};
+    let globalSerials = {};
+    let globalLogs = [];
+    let cart = [];
+    let returnCart = [];
+    let currentUser = "";
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.nav-bar button').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-' + tabId).classList.remove('hidden');
+        document.getElementById('btn-' + tabId).classList.add('active');
+    }
+
+    function handleLogin() {
+        let u = document.getElementById("username").value.trim();
+        let p = document.getElementById("password").value.trim();
+        if(!u || !p) { alert("กรุณากรอกข้อมูล"); return; }
+
+        fetch(WEB_APP_URL, { method: "POST", body: JSON.stringify({ action: "login", username: u, password: p }) })
+        .then(res => res.json()).then(res => {
+            if(res.status === "success") {
+                currentUser = res.name;
+                document.getElementById("userInfo").innerText = `ผู้ใช้งาน: ${res.name} (${res.role})`;
+                document.getElementById("authBox").classList.add("hidden");
+                document.getElementById("appBox").classList.remove("hidden");
+                loadData();
+            } else { alert(res.message); }
+        });
+    }
+
+    function handleLogout() { location.reload(); }
+
+    function loadData() {
+        return fetch(WEB_APP_URL).then(res => res.json()).then(data => {
+            globalStock = data.stock || {};
+            globalSerials = data.serials || {};
+            globalLogs = data.stockLogs || [];
+
+            // Render Dropdown
+            let html = '<option value="">-- เลือกอุปกรณ์ --</option>';
+            for(let id in globalStock) {
+                let st = globalStock[id];
+                html += `<option value="${st.id}">[${st.id}] ${st.name} (เหลือ: ${st.qty} ${st.unit})</option>`;
+            }
+            document.getElementById("itemDropdown").innerHTML = html;
+
+            // Render Stock Table
+            let stockHtml = "";
+            for(let id in globalStock) {
+                let st = globalStock[id];
+                let badge = st.qty <= 2 ? "badge-red" : "badge-green";
+                stockHtml += `<div><b>${st.id}</b> - ${st.name} : <span class="badge ${badge}">${st.qty} ${st.unit}</span></div>`;
+            }
+            document.getElementById("stockContainer").innerHTML = stockHtml || "ไม่มีข้อมูลสต็อก";
+        });
+    }
+
+    function onItemChange() {
+        let id = document.getElementById("itemDropdown").value;
+        let sDropdown = document.getElementById("serialDropdown");
+        if(globalSerials[id] && globalSerials[id].length > 0) {
+            let html = '<option value="">-- เลือกรุ่น/SN --</option>';
+            globalSerials[id].forEach(s => { html += `<option value="${s.serialNo}">${s.serialNo} (คงเหลือ: ${s.qty})</option>`; });
+            sDropdown.innerHTML = html;
+            sDropdown.style.display = "block";
+        } else {
+            sDropdown.style.display = "none";
+            sDropdown.innerHTML = "";
+        }
+    }
+
+    function addItemToCart() {
+        let id = document.getElementById("itemDropdown").value;
+        let qty = parseInt(document.getElementById("qtyInput").value) || 1;
+        let serial = document.getElementById("serialDropdown").value || "-";
+        if(!id) { alert("กรุณาเลือกอุปกรณ์"); return; }
+
+        let item = globalStock[id];
+        cart.push({ id: item.id, name: item.name, qty: qty, serial: serial, category: item.category });
+        renderCart();
+    }
+
+    function renderCart() {
+        let tbody = document.getElementById("cartTableBody");
+        if(cart.length === 0) { tbody.innerHTML = `<tr><td colspan="5">ยังไม่มีรายการ</td></tr>`; return; }
+        let html = "";
+        cart.forEach((c, idx) => {
+            let rule = c.category === "อุปกรณ์สายอากาศ" ? "ตัดสต็อกถาวร" : "ยืม-คืน";
+            html += `<tr><td>${c.id}</td><td style="text-align:left;">${c.name} ${c.serial !== '-' ? '(SN: '+c.serial+')' : ''}</td><td><b>${c.qty}</b></td><td>${rule}</td><td><button onclick="cart.splice(${idx},1);renderCart();" style="background:var(--danger);padding:2px 6px;width:auto;">ลบ</button></td></tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function submitDispatch() {
+        let siteId = document.getElementById("siteIdInput").value.trim();
+        if(!siteId) { alert("กรุณากรอกรหัสไซท์งาน"); return; }
+        if(cart.length === 0) { alert("กรุณาเลือกอุปกรณ์"); return; }
+
+        let usedItems = cart.map(c => ({ id: c.id, deductQty: c.qty, serial: c.serial }));
+        fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "saveChecklist", siteId: siteId, userName: currentUser, usedItems: usedItems })
+        }).then(res => res.json()).then(res => {
+            alert(res.message);
+            if(res.status === "success") { cart = []; renderCart(); loadData(); }
+        });
+    }
+
+    // คีย์ข้อความใน log ต้องตรงกับที่ code.gs เขียนไว้:
+    //   เบิก/ยืม  -> "ยืมอุปกรณ์ (ต้องนำกลับมาคืน)"
+    //   คืนของ   -> "📥 คืนอุปกรณ์เข้าคลัง (...)"
+    //   ตัดขาด  -> "ตัดสต็อกถาวร (ไม่ต้องคืน)"   (ไม่ต้องคืน จึงไม่นับ)
+    const LOG_BORROW = "ยืมอุปกรณ์";
+    const LOG_RETURN = "คืนอุปกรณ์เข้าคลัง";
+
+    function loadReturnItems() {
+        let site = document.getElementById("returnSiteInput").value.trim().toLowerCase();
+        let tbody = document.getElementById("returnTableBody");
+        if(!site) {
+            returnCart = [];
+            tbody.innerHTML = `<tr><td colspan="4">กรุณากรอกรหัสไซท์งานเพื่อดึงรายการ</td></tr>`;
+            return;
+        }
+
+        // คำนวณยอด "ค้างคืน" = ยอดที่เบิกออก - ยอดที่คืนเข้าแล้ว (สุทธิต่อรหัสอุปกรณ์)
+        let siteLogs = globalLogs.filter(l => l.siteId && l.siteId.toLowerCase() === site);
+        let borrowed = {}, returned = {}, names = {};
+
+        siteLogs.forEach(l => {
+            let key = l.stockId;
+            if(!key) return;
+            if(!names[key]) names[key] = l.itemName || key;
+            let q = parseInt(l.qty) || 0;
+            if(l.returnType.includes(LOG_BORROW)) borrowed[key] = (borrowed[key] || 0) + q;
+            else if(l.returnType.includes(LOG_RETURN)) returned[key] = (returned[key] || 0) + q;
+        });
+
+        let outstanding = Object.keys(borrowed)
+            .map(id => ({ id: id, name: names[id] || id, qty: borrowed[id] - (returned[id] || 0) }))
+            .filter(x => x.qty > 0);
+
+        returnCart = outstanding;
+
+        if(outstanding.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4">ไม่พบรายการค้างคืนของไซท์นี้</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        outstanding.forEach((o) => {
+            html += `<tr><td>${o.id}</td><td style="text-align:left;">${o.name}</td><td><b>${o.qty}</b></td>` +
+                    `<td><button onclick="submitSingleReturn('${o.id}', ${o.qty})" style="background:var(--success);padding:2px 8px;width:auto;">คืนชิ้นนี้</button></td></tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    function submitSingleReturn(stockId, qty) {
+        let siteId = document.getElementById("returnSiteInput").value.trim();
+        fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "returnEquipment", siteId: siteId, userName: currentUser, returnItems: [{ id: stockId, returnQty: qty }] })
+        }).then(res => res.json()).then(res => {
+            alert(res.message);
+            if(res.status === "success") { return loadData().then(loadReturnItems); }
+        });
+    }
+
+    // คืนอุปกรณ์ทั้งหมดที่ค้างอยู่ของไซท์นี้ในครั้งเดียว (เดิมยังไม่เคยถูกนิยามไว้)
+    function submitReturn() {
+        let siteId = document.getElementById("returnSiteInput").value.trim();
+        if(!siteId) { alert("กรุณากรอกรหัสไซท์งานอ้างอิง"); return; }
+        if(!returnCart || returnCart.length === 0) { alert("ไม่มีรายการค้างคืนในไซท์นี้"); return; }
+
+        let total = returnCart.reduce((s, o) => s + o.qty, 0);
+        if(!confirm(`ยืนยันการคืนอุปกรณ์ทั้งหมด ${returnCart.length} รายการ (${total} ชิ้น) เข้าคลัง?`)) return;
+
+        let returnItems = returnCart.map(o => ({ id: o.id, returnQty: o.qty }));
+        fetch(WEB_APP_URL, {
+            method: "POST",
+            body: JSON.stringify({ action: "returnEquipment", siteId: siteId, userName: currentUser, returnItems: returnItems })
+        }).then(res => res.json()).then(res => {
+            alert(res.message);
+            if(res.status === "success") { returnCart = []; return loadData().then(loadReturnItems); }
+        });
+    }
+</script>
+</body>
+</html>
