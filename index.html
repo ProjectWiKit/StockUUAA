@@ -316,7 +316,7 @@
 
 <script>
 /* ★★★ ตั้งค่า: วาง Web App URL (/exec) ที่ได้จาก Deploy ทับบรรทัดนี้ ★★★ */
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwIKBCJn_r61k_ytAhV9GB4uEN6lkFp0LoPUCdwLbtjjdUaIlpT1-T1VlP9uBDn5hIP/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwIKBCJn_r61k_ytAhV9GB4uEN6lkFp0LoPUCdwLbtjjdUaIlpT1-T1VlP9uBDn5hIP/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
 
 /* คีย์ข้อความใน log ต้องตรงกับ code.gs:
    เบิก/ยืม -> "ยืมอุปกรณ์ (ต้องนำกลับมาคืน)" | คืนของ -> "📥 คืนอุปกรณ์เข้าคลัง (...)"
@@ -413,20 +413,25 @@ async function handleLogin() {
   try {
     const res = await apiPost({ action: "login", username: u, password: p });
     if (res.status === "success") {
-      currentUser = res.name;
-      currentUserRole = res.role;
-      $("userInfo").textContent = "ผู้ใช้งาน: " + res.name;
-      const badge = $("roleBadge");
-      badge.textContent = res.role === "admin" ? "ผู้ดูแล" : "ช่างภาคสนาม";
-      badge.className = "role " + (res.role === "admin" ? "admin" : "technician");
-      $("authBox").classList.add("hidden");
-      $("appBox").classList.remove("hidden");
-      await loadData();
-      saveState();
+      await afterLogin(res.name, res.role);
       toast("ยินดีต้อนรับ " + res.name, "ok");
     } else { toast(res.message, "err"); }
   } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
-  setLoading("loginBtn", false);
+  finally { setLoading("loginBtn", false); }
+}
+
+/* ขั้นตอนหลังล็อกอินสำเร็จ (ใช้ร่วมกับกู้ session ตอน F5) */
+async function afterLogin(name, role) {
+  currentUser = name;
+  currentUserRole = role;
+  $("userInfo").textContent = "ผู้ใช้งาน: " + name;
+  const badge = $("roleBadge");
+  badge.textContent = role === "admin" ? "ผู้ดูแล" : "ช่างภาคสนาม";
+  badge.className = "role " + (role === "admin" ? "admin" : "technician");
+  $("authBox").classList.add("hidden");
+  $("appBox").classList.remove("hidden");
+  await loadData();
+  saveState();
 }
 function handleLogout() { try { localStorage.removeItem(LS_KEY); } catch (e) {} location.reload(); }
 $("password").addEventListener("keydown", (e) => { if (e.key === "Enter") handleLogin(); });
@@ -918,7 +923,7 @@ async function restoreSession() {
   if (s.catSel) { $("catSelect").value = s.catSel; onCategoryChange(); }
   renderCart();
   loadReturnItems();
-  switchTab(s.tab || "t1");
+  switchTab(s.tab || "t0");
 }
 restoreSession();
 </script>
