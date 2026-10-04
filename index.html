@@ -182,6 +182,8 @@
       <button id="btn-t1" onclick="switchTab('t1')">🚚 เบิกของ / ตรวจเช็ค</button>
       <button id="btn-t2" onclick="switchTab('t2')">📦 สต็อกคงเหลือ</button>
       <button id="btn-t3" onclick="switchTab('t3')">📥 คืนอุปกรณ์</button>
+      <button id="btn-t4" onclick="switchTab('t4')">🕘 ประวัติ</button>
+      <button id="btn-t5" onclick="switchTab('t5')">⚠️ ชำรุด/สูญหาย</button>
     </div>
 
     <!-- Tab 0: Dashboard -->
@@ -263,18 +265,66 @@
         </div>
       </div>
     </div>
+
+    <!-- Tab 4: ประวัติ -->
+    <div id="tab-t4" class="tab-content hidden">
+      <div class="card">
+        <h3>🕘 ประวัติการเบิก-คืน-ตัดจำหน่าย</h3>
+        <div class="row">
+          <div style="flex:2"><label>ค้นหา (ไซต์ / รหัส / ชื่อ / ผู้ทำรายการ)</label><input type="text" id="histSearch" placeholder="พิมพ์คำค้น…" oninput="renderHistory()"></div>
+          <div><label>จากวันที่</label><input type="date" id="histFrom" onchange="renderHistory()"></div>
+          <div><label>ถึงวันที่</label><input type="date" id="histTo" onchange="renderHistory()"></div>
+        </div>
+        <div id="histChips" class="chips"></div>
+        <table>
+          <thead><tr><th>เวลา</th><th>ไซต์</th><th>ผู้ทำรายการ</th><th>รายการ</th><th>จำนวน</th><th>สถานะ</th></tr></thead>
+          <tbody id="histBody"><tr><td colspan="6" class="empty">-</td></tr></tbody>
+        </table>
+        <div id="histCount" class="hint"></div>
+      </div>
+    </div>
+
+    <!-- Tab 5: แจ้งชำรุด/สูญหาย -->
+    <div id="tab-t5" class="tab-content hidden">
+      <div class="card">
+        <h3>⚠️ แจ้งชำรุด / สูญหาย (ตัดจำหน่าย)</h3>
+        <div class="row">
+          <div><label>แหล่งที่มา</label><select id="dmgSource" onchange="onDmgSourceChange()">
+            <option value="warehouse">ของในคลัง (หักสต็อก)</option>
+            <option value="site">ของที่ยืมไปไซต์ (ไม่หักสต็อกซ้ำ)</option>
+          </select></div>
+          <div id="dmgSiteWrap" class="hidden"><label>รหัสไซท์งาน</label><input type="text" id="dmgSite" placeholder="เช่น SITE-01"></div>
+        </div>
+        <div class="card" style="background:#f8fafc;box-shadow:none;margin-top:12px">
+          <div class="row">
+            <div><label>หมวดอุปกรณ์</label><select id="dmgCat" onchange="onDmgCatChange()"></select></div>
+            <div style="flex:2"><label>อุปกรณ์</label><select id="dmgItem" onchange="onDmgItemChange()"><option value="">-- เลือกอุปกรณ์ --</option></select></div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <div id="dmgSerialWrap" class="hidden"><label>รุ่น / Serial No.</label><select id="dmgSerial"></select></div>
+            <div style="max-width:110px"><label>จำนวน</label><input type="number" id="dmgQty" value="1" min="1"></div>
+            <div style="max-width:150px"><label>ประเภท</label><select id="dmgKind"><option value="damaged">ชำรุด</option><option value="lost">สูญหาย</option></select></div>
+          </div>
+          <div class="field" style="margin-top:10px"><label>หมายเหตุ (เช่น ตกแตก / หายที่ไซต์)</label><input type="text" id="dmgNote" placeholder="อธิบายสั้น ๆ"></div>
+          <button id="dmgBtn" class="btn-danger" style="margin-top:12px" onclick="submitDamage()">ยืนยันตัดจำหน่าย</button>
+        </div>
+        <div class="hint">ของในคลัง → หักยอดสต็อกทันที · ของที่ไซต์ → บันทึกประวัติ + ล้างยอดค้างของไซต์นั้น (ไม่หักสต็อกซ้ำเพราะหักตอนเบิกแล้ว)</div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
 /* ★★★ ตั้งค่า: วาง Web App URL (/exec) ที่ได้จาก Deploy ทับบรรทัดนี้ ★★★ */
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwBgXQbnbpgA1uwG4Y8Gp4OELiVG245y9J_3Y0tbLMHCk39825maibEX1HSfVjajzdo/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwIKBCJn_r61k_ytAhV9GB4uEN6lkFp0LoPUCdwLbtjjdUaIlpT1-T1VlP9uBDn5hIP/exec";
 
 /* คีย์ข้อความใน log ต้องตรงกับ code.gs:
    เบิก/ยืม -> "ยืมอุปกรณ์ (ต้องนำกลับมาคืน)" | คืนของ -> "📥 คืนอุปกรณ์เข้าคลัง (...)"
    ตัดขาด  -> "ตัดสต็อกถาวร (ไม่ต้องคืน)" (ไม่ต้องคืน จึงไม่นับยอดค้าง) */
 const LOG_BORROW = "ยืมอุปกรณ์";
 const LOG_RETURN = "คืนอุปกรณ์เข้าคลัง";
+const LOG_DAMAGE = "ชำรุด";
+const LOG_LOST = "สูญหาย";
 /* หมวดที่ตัดสต็อกถาวร (ต้องตรงกับ PERMANENT_CATEGORIES ใน code.gs) */
 const PERMANENT_CATS = ["อุปกรณ์สายอากาศ"];
 
@@ -306,6 +356,24 @@ const isPermanent = (cat) => PERMANENT_CATS.includes(cat);
 const ruleBadge = (returnable) => returnable
   ? '<span class="badge b-blue">ยืม-คืน</span>'
   : '<span class="badge b-amber">ตัดขาด</span>';
+
+/* ป้ายสถานะ + ประเภท log ใช้ร่วมกันทุก tab (dashboard / ประวัติ) */
+function logType(rt) {
+  rt = rt || "";
+  if (rt.includes(LOG_RETURN)) return "return";
+  if (rt.includes(LOG_BORROW)) return "borrow";
+  if (rt.includes(LOG_LOST) || rt.includes(LOG_DAMAGE)) return "damage";
+  return "permanent";
+}
+function statusBadge(rt) {
+  const t = logType(rt);
+  if (t === "return") return '<span class="badge b-green">รับคืน</span>';
+  if (t === "borrow") return '<span class="badge b-blue">เบิก/ยืม</span>';
+  if (t === "damage") return (rt || "").includes(LOG_LOST)
+    ? '<span class="badge b-red">สูญหาย</span>'
+    : '<span class="badge b-red">ชำรุด</span>';
+  return '<span class="badge b-amber">ตัดขาด</span>';
+}
 
 function toast(msg, type) {
   const box = $("toasts");
@@ -373,8 +441,10 @@ async function loadData() {
     ? data.categories
     : [...new Set(Object.values(globalStock).map((s) => s.category))];
   buildCategoryControls();
+  buildDmgCats();
   renderStock();
   renderDashboard();
+  renderHistory();
 }
 
 function buildCategoryControls() {
@@ -501,7 +571,7 @@ function calcOutstanding(logs) {
     if (!g.names[l.stockId]) g.names[l.stockId] = l.itemName || l.stockId;
     const qty = parseInt(l.qty, 10) || 0;
     if (l.returnType.includes(LOG_BORROW)) g.borrowed[l.stockId] = (g.borrowed[l.stockId] || 0) + qty;
-    else if (l.returnType.includes(LOG_RETURN)) g.returned[l.stockId] = (g.returned[l.stockId] || 0) + qty;
+    else if (l.returnType.includes(LOG_RETURN) || l.returnType.includes(LOG_DAMAGE) || l.returnType.includes(LOG_LOST)) g.returned[l.stockId] = (g.returned[l.stockId] || 0) + qty;
   });
   const rows = [];
   Object.keys(agg).sort().forEach((siteKey) => {
@@ -590,17 +660,119 @@ function renderDashboard() {
 
   // ความเคลื่อนไหวล่าสุด 8 แถว
   const recent = globalLogs.slice(-8).reverse();
-  $("dashRecentBody").innerHTML = recent.length ? recent.map((l) => {
-    const badge = l.returnType.includes(LOG_RETURN)
-      ? '<span class="badge b-green">รับคืน</span>'
-      : l.returnType.includes(LOG_BORROW)
-        ? '<span class="badge b-blue">เบิก/ยืม</span>'
-        : '<span class="badge b-amber">ตัดขาด</span>';
-    return `<tr><td style="white-space:nowrap">${fmtTime(l.time)}</td>` +
-      `<td><span class="badge b-slate">${esc(l.siteId || "-")}</span></td>` +
-      `<td class="left">${esc(l.itemName || l.stockId)}</td>` +
-      `<td><b>${l.qty}</b> ${esc(l.unit || "")}</td><td>${badge}</td></tr>`;
-  }).join("") : '<tr><td colspan="5" class="empty">ยังไม่มีความเคลื่อนไหว</td></tr>';
+  $("dashRecentBody").innerHTML = recent.length ? recent.map((l) =>
+    `<tr><td style="white-space:nowrap">${fmtTime(l.time)}</td>` +
+    `<td><span class="badge b-slate">${esc(l.siteId || "-")}</span></td>` +
+    `<td class="left">${esc(l.itemName || l.stockId)}</td>` +
+    `<td><b>${l.qty}</b> ${esc(l.unit || "")}</td><td>${statusBadge(l.returnType)}</td></tr>`
+  ).join("") : '<tr><td colspan="5" class="empty">ยังไม่มีความเคลื่อนไหว</td></tr>';
+}
+
+/* ---------- History ---------- */
+let histType = "ALL";
+const HIST_TYPES = [["ALL", "ทั้งหมด"], ["borrow", "เบิก-ยืม"], ["return", "รับคืน"], ["permanent", "ตัดขาด"], ["damage", "ชำรุด/สูญหาย"]];
+
+function setHistType(t) { histType = t; renderHistory(); }
+
+function localDay(d) {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function renderHistory() {
+  if (!$("histBody")) return;
+  const q = ($("histSearch").value || "").trim().toLowerCase();
+  const from = $("histFrom").value, to = $("histTo").value;
+
+  $("histChips").innerHTML = HIST_TYPES.map(([v, l]) =>
+    `<button class="chip${histType === v ? " active" : ""}" onclick="setHistType('${v}')">${l}</button>`).join("");
+
+  const rows = globalLogs.filter((l) => {
+    if (histType !== "ALL" && logType(l.returnType) !== histType) return false;
+    if (q) {
+      const hay = `${l.siteId || ""} ${l.stockId || ""} ${l.itemName || ""} ${l.user || ""}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (from || to) {
+      const d = new Date(l.time);
+      if (isNaN(d)) return false;
+      const day = localDay(d);
+      if (from && day < from) return false;
+      if (to && day > to) return false;
+    }
+    return true;
+  }).reverse();
+
+  const CAP = 500;
+  const shown = rows.slice(0, CAP);
+  $("histBody").innerHTML = shown.length ? shown.map((l) =>
+    `<tr><td style="white-space:nowrap">${fmtTime(l.time)}</td>` +
+    `<td><span class="badge b-slate">${esc(l.siteId || "-")}</span></td>` +
+    `<td>${esc(l.user || "-")}</td><td class="left">${esc(l.itemName || l.stockId)}</td>` +
+    `<td><b>${l.qty}</b> ${esc(l.unit || "")}</td><td>${statusBadge(l.returnType)}</td></tr>`
+  ).join("") : '<tr><td colspan="6" class="empty">ไม่พบประวัติตามเงื่อนไข</td></tr>';
+  $("histCount").textContent = `แสดง ${shown.length} จาก ${rows.length} รายการ`;
+}
+
+/* ---------- Damage (แจ้งชำรุด/สูญหาย) ---------- */
+function onDmgSourceChange() {
+  $("dmgSiteWrap").classList.toggle("hidden", $("dmgSource").value !== "site");
+}
+
+function buildDmgCats() {
+  $("dmgCat").innerHTML = globalCats.length
+    ? globalCats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("")
+    : '<option value="ALL">ทุกหมวด</option>';
+  onDmgCatChange();
+}
+
+function onDmgCatChange() {
+  const cat = $("dmgCat").value;
+  const ids = Object.keys(globalStock)
+    .filter((id) => cat === "ALL" || globalStock[id].category === cat)
+    .sort();
+  $("dmgItem").innerHTML = '<option value="">-- เลือกอุปกรณ์ --</option>' + ids.map((id) => {
+    const st = globalStock[id];
+    return `<option value="${esc(st.id)}">[${esc(st.id)}] ${esc(st.name)} (เหลือ ${st.qty} ${esc(st.unit)})</option>`;
+  }).join("");
+  onDmgItemChange();
+}
+
+function onDmgItemChange() {
+  const id = $("dmgItem").value;
+  const list = id && globalSerials[id] ? globalSerials[id] : [];
+  const wrap = $("dmgSerialWrap"), sel = $("dmgSerial");
+  if (list.length > 0) {
+    sel.innerHTML = '<option value="">-- ไม่ระบุรุ่น/SN --</option>' +
+      list.map((s) => `<option value="${esc(s.serialNo)}">${esc(s.serialNo)} (คงเหลือ ${s.qty})</option>`).join("");
+    wrap.classList.remove("hidden");
+  } else { wrap.classList.add("hidden"); sel.innerHTML = ""; }
+}
+
+async function submitDamage() {
+  const itemId = $("dmgItem").value;
+  const qty = parseInt($("dmgQty").value, 10) || 0;
+  const source = $("dmgSource").value;
+  const siteId = $("dmgSite").value.trim();
+  if (!itemId) { toast("กรุณาเลือกอุปกรณ์", "err"); return; }
+  if (qty < 1) { toast("จำนวนต้องมากกว่า 0", "err"); return; }
+  if (source === "site" && !siteId) { toast("กรุณากรอกรหัสไซท์งาน", "err"); return; }
+  const kind = $("dmgKind").value;
+  if (!confirm(`ยืนยันตัดจำหน่าย (${kind === "lost" ? "สูญหาย" : "ชำรุด"}) จำนวน ${qty} ชิ้น?`)) return;
+
+  setLoading("dmgBtn", true);
+  try {
+    const res = await apiPost({
+      action: "reportDamage",
+      siteId: source === "site" ? siteId : "-",
+      userName: currentUser,
+      deductStock: source === "warehouse",
+      items: [{ id: itemId, qty: qty, serial: $("dmgSerial").value || "-", kind: kind, note: $("dmgNote").value.trim() }]
+    });
+    toast(res.message, res.status === "success" ? "ok" : "err");
+    if (res.status === "success") { $("dmgQty").value = 1; $("dmgNote").value = ""; await loadData(); }
+  } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
+  setLoading("dmgBtn", false);
 }
 
 /* ---------- Return (2 ชั้น) ----------
