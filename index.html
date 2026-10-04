@@ -148,6 +148,23 @@
     border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
   @keyframes spin{to{transform:rotate(360deg)}}
   @media (max-width:560px){ .hero h1{font-size:18px} .hero::after{font-size:48px} }
+
+  /* ===== ใบพิมพ์ (แสดงเฉพาะตอนสั่งพิมพ์) ===== */
+  #printArea{display:none}
+  @media print{
+    body{background:#fff;padding:0}
+    body *{visibility:hidden}
+    #printArea, #printArea *{visibility:visible}
+    #printArea{display:block;position:absolute;left:0;top:0;width:100%;padding:10px;color:#000}
+    #printArea h2{margin:0 0 2px;font-size:18px}
+    #printArea .p-sub{font-size:12px;color:#333;margin-bottom:10px}
+    #printArea table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+    #printArea th,#printArea td{border:1px solid #000;padding:6px 8px;text-align:center;visibility:visible}
+    #printArea td.left{text-align:left}
+    #printArea .sig{display:flex;gap:30px;margin-top:36px;font-size:12.5px}
+    #printArea .sig div{flex:1;text-align:center}
+    #printArea .sig .line{margin-top:44px;border-top:1px dotted #000;padding-top:4px}
+  }
 </style>
 </head>
 <body>
@@ -159,6 +176,7 @@
   </div>
 
   <div id="toasts"></div>
+  <div id="printArea"></div>
 
   <!-- ============ LOGIN ============ -->
   <div id="authBox" class="card login-card">
@@ -232,6 +250,9 @@
           <tbody id="cartTableBody"><tr><td colspan="5" class="empty">ยังไม่มีรายการอุปกรณ์</td></tr></tbody>
         </table>
         <button id="dispatchBtn" class="btn-success" style="margin-top:14px" onclick="submitDispatch()">ยืนยันการเบิกอุปกรณ์และตัดสต็อก</button>
+        <button class="btn-ghost" style="margin-top:8px" onclick="printDispatch()">🖨️ พิมพ์ใบเบิก (พิมพ์ก่อนกดยืนยัน)</button>
+        <div class="field" style="margin-top:12px"><label>📷 รูปถ่ายหน้างาน (ไม่บังคับ — แนบอัตโนมัติตอนกดยืนยัน)</label><input type="file" id="dispatchPhotos" accept="image/*" multiple onchange="previewPhotos('dispatchPhotos','dispatchPreview')"></div>
+        <div id="dispatchPreview" class="row" style="gap:6px"></div>
       </div>
     </div>
 
@@ -262,6 +283,9 @@
             <tbody id="returnTableBody"><tr><td colspan="4" class="empty">-</td></tr></tbody>
           </table>
           <button id="returnBtn" class="btn-success" style="margin-top:14px" onclick="submitReturn()">ยืนยันการคืนไซต์นี้เข้าคลัง</button>
+          <button class="btn-ghost" style="margin-top:8px" onclick="printReturn()">🖨️ พิมพ์ใบคืนของไซต์นี้</button>
+          <div class="field" style="margin-top:12px"><label>📷 รูปถ่ายตอนคืน (ไม่บังคับ)</label><input type="file" id="returnPhotos" accept="image/*" multiple onchange="previewPhotos('returnPhotos','returnPreview')"></div>
+          <div id="returnPreview" class="row" style="gap:6px"></div>
         </div>
       </div>
     </div>
@@ -306,6 +330,8 @@
             <div style="max-width:150px"><label>ประเภท</label><select id="dmgKind"><option value="damaged">ชำรุด</option><option value="lost">สูญหาย</option></select></div>
           </div>
           <div class="field" style="margin-top:10px"><label>หมายเหตุ (เช่น ตกแตก / หายที่ไซต์)</label><input type="text" id="dmgNote" placeholder="อธิบายสั้น ๆ"></div>
+          <div class="field" style="margin-top:10px"><label>📷 รูปหลักฐาน (ไม่บังคับ — แนะนำให้ถ่ายไว้)</label><input type="file" id="dmgPhotos" accept="image/*" multiple onchange="previewPhotos('dmgPhotos','dmgPreview')"></div>
+          <div id="dmgPreview" class="row" style="gap:6px"></div>
           <button id="dmgBtn" class="btn-danger" style="margin-top:12px" onclick="submitDamage()">ยืนยันตัดจำหน่าย</button>
         </div>
         <div class="hint">ของในคลัง → หักยอดสต็อกทันที · ของที่ไซต์ → บันทึกประวัติ + ล้างยอดค้างของไซต์นั้น (ไม่หักสต็อกซ้ำเพราะหักตอนเบิกแล้ว)</div>
@@ -316,7 +342,7 @@
 
 <script>
 /* ★★★ ตั้งค่า: วาง Web App URL (/exec) ที่ได้จาก Deploy ทับบรรทัดนี้ ★★★ */
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxTUpLj6pCNRF-9h_Mnq7YJI-lsQMmF9ki4x3gG7YdXgXEZCGuU9uwzn_XzcE2b8xHZ/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzPwgpm479tnYVw8jSCu9HerET6CMOpJlS8OPoDhxprqggrIhjarpeiIi2GrnmJgt4T/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
 
 /* คีย์ข้อความใน log ต้องตรงกับ code.gs:
    เบิก/ยืม -> "ยืมอุปกรณ์ (ต้องนำกลับมาคืน)" | คืนของ -> "📥 คืนอุปกรณ์เข้าคลัง (...)"
@@ -329,6 +355,8 @@ const LOG_LOST = "สูญหาย";
 const PERMANENT_CATS = ["อุปกรณ์สายอากาศ"];
 
 let globalStock = {}, globalSerials = {}, globalLogs = [], globalCats = [];
+let globalOutstanding = []; // [{site, siteKey, id, name, qty, unit}] คำนวณครบจาก server (ยอดจริงแม้ log เกิน LOG_CAP)
+let globalLogTotal = 0, globalLogTruncated = false;
 let cart = [], returnCart = [], currentUser = "", currentUserRole = "", stockFilterCat = "ALL";
 
 /* จำสถานะลงเครื่อง (กด F5 แล้วกลับมาที่เดิมโดยไม่ต้องล็อกอินใหม่) */
@@ -442,6 +470,12 @@ async function loadData() {
   globalStock = data.stock || {};
   globalSerials = data.serials || {};
   globalLogs = data.stockLogs || [];
+  globalOutstanding = (data.outstanding || []).map((r) => ({
+    site: r.site, siteKey: String(r.site || "").toLowerCase(),
+    id: r.id, name: r.name || r.id, qty: r.qty, unit: r.unit || "ชิ้น"
+  }));
+  globalLogTotal = data.logTotal || globalLogs.length;
+  globalLogTruncated = !!data.logTruncated;
   globalCats = (data.categories && data.categories.length)
     ? data.categories
     : [...new Set(Object.values(globalStock).map((s) => s.category))];
@@ -535,7 +569,7 @@ async function submitDispatch() {
       usedItems: cart.map((c) => ({ id: c.id, deductQty: c.qty, serial: c.serial }))
     });
     toast(res.message, res.status === "success" ? "ok" : "err");
-    if (res.status === "success") { cart = []; renderCart(); await loadData(); }
+    if (res.status === "success") { cart = []; renderCart(); await loadData(); await uploadPhotos("dispatchPhotos", "dispatchPreview", "dispatch", siteId); }
   } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
   setLoading("dispatchBtn", false);
 }
@@ -564,30 +598,8 @@ function renderStock() {
   }).join("");
 }
 
-/* ---------- ยอดค้างคืนสุทธิ (เบิก - คืนแล้ว) จาก log ชุดใดก็ได้ ----------
-   คืนค่าแถว [{ site, siteKey, id, name, qty }] เรียงตามไซต์แล้วตามรหัส */
-function calcOutstanding(logs) {
-  const agg = {};
-  (logs || []).forEach((l) => {
-    if (!l.siteId || !l.stockId) return;
-    const siteKey = l.siteId.toLowerCase();
-    if (!agg[siteKey]) agg[siteKey] = { site: l.siteId, borrowed: {}, returned: {}, names: {} };
-    const g = agg[siteKey];
-    if (!g.names[l.stockId]) g.names[l.stockId] = l.itemName || l.stockId;
-    const qty = parseInt(l.qty, 10) || 0;
-    if (l.returnType.includes(LOG_BORROW)) g.borrowed[l.stockId] = (g.borrowed[l.stockId] || 0) + qty;
-    else if (l.returnType.includes(LOG_RETURN) || l.returnType.includes(LOG_DAMAGE) || l.returnType.includes(LOG_LOST)) g.returned[l.stockId] = (g.returned[l.stockId] || 0) + qty;
-  });
-  const rows = [];
-  Object.keys(agg).sort().forEach((siteKey) => {
-    const g = agg[siteKey];
-    Object.keys(g.borrowed).sort().forEach((id) => {
-      const left = g.borrowed[id] - (g.returned[id] || 0);
-      if (left > 0) rows.push({ site: g.site, siteKey: siteKey, id: id, name: g.names[id] || id, qty: left });
-    });
-  });
-  return rows;
-}
+/* ---------- ยอดค้างคืนสุทธิ: ใช้ค่าที่ server คำนวณมาครบ (globalOutstanding) ----------
+   หมายเหตุ: เลิกคำนวณจาก log ฝั่ง frontend แล้ว เพราะ server ส่ง log มาแค่ย้อนหลังสุด */
 
 function fmtTime(t) {
   const d = new Date(t);
@@ -611,7 +623,7 @@ function renderDashboard() {
   const ids = Object.keys(globalStock);
   const qtyOf = (id) => parseInt(globalStock[id].qty, 10) || 0;
   const totalQty = ids.reduce((s, id) => s + qtyOf(id), 0);
-  const out = calcOutstanding(globalLogs);
+  const out = globalOutstanding;
   const outQty = out.reduce((s, r) => s + r.qty, 0);
   const outSites = [...new Set(out.map((r) => r.site))];
   const low = ids.filter((id) => qtyOf(id) <= LOW_QTY);
@@ -716,7 +728,8 @@ function renderHistory() {
     `<td>${esc(l.user || "-")}</td><td class="left">${esc(l.itemName || l.stockId)}</td>` +
     `<td><b>${l.qty}</b> ${esc(l.unit || "")}</td><td>${statusBadge(l.returnType)}</td></tr>`
   ).join("") : '<tr><td colspan="6" class="empty">ไม่พบประวัติตามเงื่อนไข</td></tr>';
-  $("histCount").textContent = `แสดง ${shown.length} จาก ${rows.length} รายการ`;
+  $("histCount").textContent = `แสดง ${shown.length} จาก ${rows.length} รายการ` +
+    (globalLogTruncated ? ` (โหลดย้อนหลังสุดจากทั้งหมด ${globalLogTotal} รายการ — ดูทั้งหมดในชีท)` : "");
 }
 
 /* ---------- Damage (แจ้งชำรุด/สูญหาย) ---------- */
@@ -775,7 +788,7 @@ async function submitDamage() {
       items: [{ id: itemId, qty: qty, serial: $("dmgSerial").value || "-", kind: kind, note: $("dmgNote").value.trim() }]
     });
     toast(res.message, res.status === "success" ? "ok" : "err");
-    if (res.status === "success") { $("dmgQty").value = 1; $("dmgNote").value = ""; await loadData(); }
+    if (res.status === "success") { $("dmgQty").value = 1; $("dmgNote").value = ""; await loadData(); await uploadPhotos("dmgPhotos", "dmgPreview", "damage", source === "site" ? siteId : "-"); }
   } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
   setLoading("dmgBtn", false);
 }
@@ -813,13 +826,8 @@ function loadReturnItems() {
   const q = $("returnSiteInput").value.trim().toLowerCase();
   const list = $("siteList"), detail = $("siteDetail"), tb = $("returnTableBody");
 
-  const matched = globalLogs.filter((l) => {
-    if (!l.siteId) return false;
-    return !q || l.siteId.toLowerCase().includes(q);
-  });
-
-  // รวมยอดแยกเป็นราย (ไซต์, รหัสอุปกรณ์) แล้วจัดกลุ่มเป็นรายไซต์
-  const rows = calcOutstanding(matched);
+  // กรองจากยอดค้างที่ server คำนวณมาครบแล้ว (ไม่คำนวณจาก log ย่อฝั่งนี้)
+  const rows = globalOutstanding.filter((r) => !q || r.siteKey.includes(q));
   siteCache = [];
   rows.forEach((r) => {
     let s = siteCache.find((x) => x.key === r.siteKey);
@@ -888,10 +896,109 @@ async function submitReturn() {
       returnItems: returnCart.map((o) => ({ id: o.id, returnQty: o.qty }))
     });
     toast(res.message, res.status === "success" ? "ok" : "err");
-    if (res.status === "success") { returnCart = []; selectedSiteKey = null; await loadData(); loadReturnItems(); }
+    if (res.status === "success") { returnCart = []; selectedSiteKey = null; await loadData(); loadReturnItems(); await uploadPhotos("returnPhotos", "returnPreview", "return", site); }
   } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
   setLoading("returnBtn", false);
 }
+/* ---------- พิมพ์ใบเบิก/ใบคืน ---------- */
+function printDoc(title, site, rows) {
+  if (!rows || rows.length === 0) { toast("ไม่มีรายการสำหรับพิมพ์", "err"); return; }
+  const now = new Date().toLocaleString("th-TH", { dateStyle: "medium", timeStyle: "short" });
+  let n = 0, total = 0;
+  const body = rows.map((r) => {
+    n++; total += r.qty;
+    const note = r.serial && r.serial !== "-" ? "SN: " + r.serial : (r.category || "");
+    return `<tr><td>${n}</td><td>${esc(r.id)}</td><td class="left">${esc(r.name)}</td>` +
+      `<td><b>${r.qty}</b></td><td>${esc(r.unit || "ชิ้น")}</td><td class="left">${esc(note)}</td></tr>`;
+  }).join("");
+  $("printArea").innerHTML =
+    `<h2>📡 JKP Engineering — ${esc(title)}</h2>` +
+    `<div class="p-sub">รหัสไซท์งาน: <b>${esc(site)}</b> · ผู้ทำรายการ: <b>${esc(currentUser)}</b> · วันที่: ${esc(now)}</div>` +
+    `<table><thead><tr><th>ลำดับ</th><th>รหัส</th><th>ชื่ออุปกรณ์</th><th>จำนวน</th><th>หน่วย</th><th>หมายเหตุ</th></tr></thead>` +
+    `<tbody>${body}</tbody></table>` +
+    `<div class="p-sub" style="margin-top:6px">รวม ${n} รายการ (${total} ชิ้น)</div>` +
+    `<div class="sig"><div>ผู้เบิก/ผู้คืน<div class="line">(.../......../........) วันที่</div></div>` +
+    `<div>ผู้จ่าย/ผู้รับ<div class="line">(.../......../........) วันที่</div></div></div>`;
+  window.print();
+}
+
+function printDispatch() {
+  const site = $("siteIdInput").value.trim();
+  if (!site) { toast("กรุณากรอกรหัสไซท์งาน", "err"); return; }
+  if (cart.length === 0) { toast("ตะกร้ายังว่าง (พิมพ์ก่อนกดยืนยัน)", "err"); return; }
+  printDoc("ใบเบิกอุปกรณ์ออกหน้างาน", site, cart);
+}
+
+function printReturn() {
+  if (!selectedSiteKey || !returnCart || returnCart.length === 0) { toast("ไม่มีรายการสำหรับพิมพ์", "err"); return; }
+  printDoc("ใบคืนอุปกรณ์เข้าคลัง", returnCart[0].site, returnCart.map((o) => ({
+    id: o.id, name: o.name, qty: o.qty,
+    unit: (globalStock[o.id] && globalStock[o.id].unit) || "ชิ้น", serial: "", category: ""
+  })));
+}
+
+/* ---------- รูปถ่ายหน้างาน (ย่อก่อนอัปโหลดเพื่อความเร็ว) ---------- */
+function previewPhotos(inputId, prevId) {
+  const prev = $(prevId);
+  prev.innerHTML = "";
+  const files = [...($(inputId).files || [])].slice(0, 5);
+  files.forEach((f) => {
+    const img = document.createElement("img");
+    img.style.cssText = "width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)";
+    img.src = URL.createObjectURL(f);
+    prev.appendChild(img);
+  });
+  if (($(inputId).files || []).length > 5) toast("แนบได้ครั้งละไม่เกิน 5 รูป (ใช้ 5 รูปแรก)", "err");
+}
+
+function downscaleImage(file, maxDim, quality) {
+  maxDim = maxDim || 1280; quality = quality || 0.7;
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+        const w = Math.max(1, Math.round(img.naturalWidth * scale));
+        const h = Math.max(1, Math.round(img.naturalHeight * scale));
+        const cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        const dataUrl = cv.toDataURL("image/jpeg", quality);
+        resolve({
+          fileName: (file.name || "photo").replace(/\.[a-z0-9]+$/i, "") + ".jpg",
+          mime: "image/jpeg",
+          data: dataUrl.split(",")[1]
+        });
+      } catch (e) { URL.revokeObjectURL(url); reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("อ่านไฟล์รูปไม่ได้")); };
+    img.src = url;
+  });
+}
+
+async function uploadPhotos(inputId, prevId, kind, siteId) {
+  const files = [...($(inputId).files || [])].slice(0, 5);
+  if (!files.length) return 0;
+  let ok = 0;
+  for (const f of files) {
+    try {
+      const p = await downscaleImage(f);
+      const res = await apiPost({
+        action: "uploadPhoto", siteId: siteId, userName: currentUser,
+        kind: kind, fileName: p.fileName, mime: p.mime, data: p.data
+      });
+      if (res.status === "success") ok++;
+    } catch (e) { /* รูปไหนพังข้ามไปรูปถัดไป */ }
+  }
+  $(inputId).value = "";
+  $(prevId).innerHTML = "";
+  if (ok < files.length) toast(`อัปโหลดรูปได้ ${ok}/${files.length} รูป`, "err");
+  else toast(`แนบรูปถ่าย ${ok} รูปเรียบร้อยแล้ว`, "ok");
+  return ok;
+}
+
 /* ---------- จำสถานะข้าม F5: เปิดหน้ามาแล้วล็อกอินค้างไว้ + อยู่ tab เดิม ---------- */
 async function restoreSession() {
   let s = null;
