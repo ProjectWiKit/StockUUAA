@@ -342,7 +342,7 @@
 
 <script>
 /* ★★★ ตั้งค่า: วาง Web App URL (/exec) ที่ได้จาก Deploy ทับบรรทัดนี้ ★★★ */
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyxsrQW7SXe2LJBL26hs5G7FyfqL5lVG7NjpyvL37jr0tDsmlMQvfklZdJ0PW6kL5I7/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyWI3SJfY4SOyHmIMtVTCTjzfG_TDwJU6G2OFu312jf9afPIuj7UlJU1RAKlLLGWGQx/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
 
 /* คีย์ข้อความใน log ต้องตรงกับ code.gs:
    เบิก/ยืม -> "ยืมอุปกรณ์ (ต้องนำกลับมาคืน)" | คืนของ -> "📥 คืนอุปกรณ์เข้าคลัง (...)"
@@ -601,6 +601,10 @@ function renderStock() {
 /* ---------- ยอดค้างคืนสุทธิ: ใช้ค่าที่ server คำนวณมาครบ (globalOutstanding) ----------
    หมายเหตุ: เลิกคำนวณจาก log ฝั่ง frontend แล้ว เพราะ server ส่ง log มาแค่ย้อนหลังสุด */
 
+/* หน่วยนับไม่ได้เป็นชิ้น (ความยาว/น้ำหนัก/ปริมาตร) — ไม่เอามารวมยอด "คงเหลือรวม" */
+const NON_COUNTABLE_UNITS = ["เมตร", "ม.", "ม", "เซนติเมตร", "ซม.", "กิโลกรัม", "กก.", "กรัม", "ก.", "ลิตร", "ล."];
+const isCountable = (unit) => !NON_COUNTABLE_UNITS.includes(String(unit || "").trim());
+
 function fmtTime(t) {
   const d = new Date(t);
   if (isNaN(d)) return esc(String(t ?? "-"));
@@ -622,7 +626,7 @@ function goSiteIdx(i) {
 function renderDashboard() {
   const ids = Object.keys(globalStock);
   const qtyOf = (id) => parseInt(globalStock[id].qty, 10) || 0;
-  const totalQty = ids.reduce((s, id) => s + qtyOf(id), 0);
+  const totalQty = ids.filter((id) => isCountable(globalStock[id].unit)).reduce((s, id) => s + qtyOf(id), 0);
   const out = globalOutstanding;
   const outQty = out.reduce((s, r) => s + r.qty, 0);
   const outSites = [...new Set(out.map((r) => r.site))];
@@ -637,17 +641,22 @@ function renderDashboard() {
     card(outSites.length, "ไซต์ที่ค้างคืน", "var(--accent)") +
     card(low.length, `รายการใกล้หมด (≤ ${LOW_QTY})`, low.length ? "var(--danger)" : "var(--success)");
 
-  // แยกตามหมวด
+  // แยกตามหมวด (แสดงหน่วยจริงของหมวดนั้น ไม่เหมารวมเป็น "ชิ้น")
   const cats = {};
   ids.forEach((id) => {
     const st = globalStock[id];
-    if (!cats[st.category]) cats[st.category] = { n: 0, qty: 0, returnable: st.returnable ?? !isPermanent(st.category) };
+    if (!cats[st.category]) cats[st.category] = { n: 0, qty: 0, units: {}, returnable: st.returnable ?? !isPermanent(st.category) };
     cats[st.category].n++;
     cats[st.category].qty += qtyOf(id);
+    cats[st.category].units[st.unit || "ชิ้น"] = true;
   });
+  const catQtyText = (c) => {
+    const u = Object.keys(cats[c].units);
+    return cats[c].n + " รายการ · " + cats[c].qty + (u.length === 1 ? " " + u[0] : " (หลายหน่วย)");
+  };
   $("dashCats").innerHTML = Object.keys(cats).sort().map((c) =>
     `<div class="stock-item"><div class="code">หมวด</div><div class="name">${esc(c)}</div>` +
-    `<div class="meta"><span class="badge b-slate">${cats[c].n} รายการ · ${cats[c].qty} ชิ้น</span>${ruleBadge(cats[c].returnable)}</div></div>`
+    `<div class="meta"><span class="badge b-slate">${esc(catQtyText(c))}</span>${ruleBadge(cats[c].returnable)}</div></div>`
   ).join("") || '<div class="empty">ไม่มีข้อมูล</div>';
 
   // ของค้างแยกตามไซต์ (กดเพื่อไปหน้าคืนของ)
