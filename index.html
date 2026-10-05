@@ -202,6 +202,7 @@
       <button id="btn-t3" onclick="switchTab('t3')">📥 คืนอุปกรณ์</button>
       <button id="btn-t4" onclick="switchTab('t4')">🕘 ประวัติ</button>
       <button id="btn-t5" onclick="switchTab('t5')">⚠️ ชำรุด/สูญหาย</button>
+      <button id="btn-t6" onclick="switchTab('t6')">👥 ผู้ใช้</button>
     </div>
 
     <!-- Tab 0: Dashboard -->
@@ -337,12 +338,40 @@
         <div class="hint">ของในคลัง → หักยอดสต็อกทันที · ของที่ไซต์ → บันทึกประวัติ + ล้างยอดค้างของไซต์นั้น (ไม่หักสต็อกซ้ำเพราะหักตอนเบิกแล้ว)</div>
       </div>
     </div>
+
+    <!-- Tab 6: จัดการผู้ใช้ (เฉพาะ admin) -->
+    <div id="tab-t6" class="tab-content hidden">
+      <div class="card">
+        <h3>👥 จัดการผู้ใช้</h3>
+        <div class="card" style="background:#f8fafc;box-shadow:none">
+          <h4 style="margin:0 0 10px;font-size:13.5px">เพิ่มช่างใหม่</h4>
+          <div class="row">
+            <div><label>ID (ใช้ล็อกอิน)</label><input type="text" id="newMemberId" placeholder="เช่น M004"></div>
+            <div><label>ชื่อ-นามสกุล</label><input type="text" id="newMemberName" placeholder="เช่น สมศักดิ์ ดีมาก"></div>
+            <div><label>รหัสผ่าน (≥ 4 ตัว)</label><input type="password" id="newMemberPass" placeholder="ตั้งรหัสเริ่มต้น"></div>
+            <div><label>โทรศัพท์</label><input type="text" id="newMemberPhone" placeholder="08xxxxxxxx"></div>
+          </div>
+          <button class="btn-success" style="margin-top:10px;width:auto;padding:10px 26px" onclick="addMember()">+ เพิ่มสมาชิก</button>
+        </div>
+        <h4 style="font-size:14px">ช่างภาคสนาม</h4>
+        <table>
+          <thead><tr><th>ID</th><th>ชื่อ</th><th>โทรศัพท์</th><th>สถานะ</th><th>จัดการ</th></tr></thead>
+          <tbody id="memberTableBody"><tr><td colspan="5" class="empty">-</td></tr></tbody>
+        </table>
+        <h4 style="font-size:14px;margin-top:16px">ผู้ดูแลระบบ</h4>
+        <table>
+          <thead><tr><th>Username</th><th>ชื่อ</th><th>จัดการ</th></tr></thead>
+          <tbody id="adminTableBody"><tr><td colspan="3" class="empty">-</td></tr></tbody>
+        </table>
+        <div class="hint">ไม่มีปุ่มลบ — บัญชีที่ไม่ใช้แล้วให้กด "ปิดใช้งาน" แทน เพื่อไม่ให้ประวัติการทำรายการเสีย</div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
 /* ★★★ ตั้งค่า: วาง Web App URL (/exec) ที่ได้จาก Deploy ทับบรรทัดนี้ ★★★ */
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyWI3SJfY4SOyHmIMtVTCTjzfG_TDwJU6G2OFu312jf9afPIuj7UlJU1RAKlLLGWGQx/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzF7oZ1nrJsade9bdq5xqlRFZzeehxQUwE0E8erqoOZp-Qzqo2ECZB9LIGLzZjKqevt/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
 
 /* คีย์ข้อความใน log ต้องตรงกับ code.gs:
    เบิก/ยืม -> "ยืมอุปกรณ์ (ต้องนำกลับมาคืน)" | คืนของ -> "📥 คืนอุปกรณ์เข้าคลัง (...)"
@@ -484,6 +513,8 @@ async function loadData() {
   renderStock();
   renderDashboard();
   renderHistory();
+  applyRoleGate();
+  await loadUsers();
 }
 
 function buildCategoryControls() {
@@ -1006,6 +1037,108 @@ async function uploadPhotos(inputId, prevId, kind, siteId) {
   if (ok < files.length) toast(`อัปโหลดรูปได้ ${ok}/${files.length} รูป`, "err");
   else toast(`แนบรูปถ่าย ${ok} รูปเรียบร้อยแล้ว`, "ok");
   return ok;
+}
+
+/* ---------- Users (เฉพาะ admin) ---------- */
+let globalUsers = { admins: [], members: [] };
+
+function applyRoleGate() {
+  const isAdmin = currentUserRole === "admin";
+  $("btn-t6").style.display = isAdmin ? "" : "none";
+  if (!isAdmin) {
+    const active = document.querySelector(".tabs button.active");
+    if (active && active.id === "btn-t6") switchTab("t0");
+  }
+}
+
+async function loadUsers() {
+  if (currentUserRole !== "admin") return;
+  try {
+    const res = await apiPost({ action: "listUsers" });
+    if (res.status === "success") {
+      globalUsers = { admins: res.admins || [], members: res.members || [] };
+      renderUsers();
+    } else { toast(res.message, "err"); }
+  } catch (e) { toast("โหลดรายชื่อผู้ใช้ไม่ได้: " + e.message, "err"); }
+}
+
+function renderUsers() {
+  const mtb = $("memberTableBody");
+  mtb.innerHTML = globalUsers.members.length ? globalUsers.members.map((m, i) => {
+    const on = (m.status || "active") === "active";
+    return `<tr><td><b>${esc(m.id)}</b></td><td class="left">${esc(m.name)}</td>` +
+      `<td>${esc(m.phone || "-")}</td>` +
+      `<td><span class="badge ${on ? "b-green" : "b-red"}">${on ? "ใช้งาน" : "ปิดใช้"}</span></td>` +
+      `<td style="white-space:nowrap"><button class="btn-ghost btn-sm" onclick="toggleMember(${i})">${on ? "ปิดใช้งาน" : "เปิดใช้งาน"}</button> ` +
+      `<button class="btn-ghost btn-sm" onclick="resetMemberPw(${i})">รีเซ็ตรหัส</button></td></tr>`;
+  }).join("") : '<tr><td colspan="5" class="empty">ยังไม่มีสมาชิก</td></tr>';
+
+  const atb = $("adminTableBody");
+  atb.innerHTML = globalUsers.admins.length ? globalUsers.admins.map((a, i) =>
+    `<tr><td><b>${esc(a.username)}</b></td><td class="left">${esc(a.name)}</td>` +
+    `<td><button class="btn-ghost btn-sm" onclick="resetAdminPw(${i})">รีเซ็ตรหัส</button></td></tr>`
+  ).join("") : '<tr><td colspan="3" class="empty">-</td></tr>';
+}
+
+async function addMember() {
+  const id = $("newMemberId").value.trim();
+  const name = $("newMemberName").value.trim();
+  const pass = $("newMemberPass").value;
+  const phone = $("newMemberPhone").value.trim();
+  if (!id || !name || !pass) { toast("กรุณากรอก ID, ชื่อ และรหัสผ่าน", "err"); return; }
+  try {
+    const res = await apiPost({ action: "addMember", memberId: id, memberName: name, memberPass: pass, memberPhone: phone });
+    toast(res.message, res.status === "success" ? "ok" : "err");
+    if (res.status === "success") {
+      $("newMemberId").value = ""; $("newMemberName").value = "";
+      $("newMemberPass").value = ""; $("newMemberPhone").value = "";
+      await loadUsers();
+    }
+  } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
+}
+
+async function toggleMember(i) {
+  const m = globalUsers.members[i];
+  if (!m) return;
+  const toInactive = (m.status || "active") === "active";
+  if (!confirm(`ยืนยัน${toInactive ? "ปิด" : "เปิด"}ใช้งาน ${m.id} (${m.name})?`)) return;
+  try {
+    const res = await apiPost({ action: "setMemberStatus", memberId: m.id, status: toInactive ? "inactive" : "active" });
+    toast(res.message, res.status === "success" ? "ok" : "err");
+    if (res.status === "success") await loadUsers();
+  } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
+}
+
+async function askNewPassword(label) {
+  const p1 = window.prompt(`รหัสผ่านใหม่ของ ${label} (อย่างน้อย 4 ตัว):`);
+  if (p1 === null) return null;
+  if (p1.trim().length < 4) { toast("รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร", "err"); return null; }
+  const p2 = window.prompt(`ยืนยันรหัสผ่านของ ${label} อีกครั้ง:`);
+  if (p2 === null) return null;
+  if (p1 !== p2) { toast("รหัสผ่าน 2 ครั้งไม่ตรงกัน", "err"); return null; }
+  return p1;
+}
+
+async function resetMemberPw(i) {
+  const m = globalUsers.members[i];
+  if (!m) return;
+  const np = await askNewPassword(m.id);
+  if (np === null) return;
+  try {
+    const res = await apiPost({ action: "resetPassword", kind: "member", id: m.id, newPass: np });
+    toast(res.message, res.status === "success" ? "ok" : "err");
+  } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
+}
+
+async function resetAdminPw(i) {
+  const a = globalUsers.admins[i];
+  if (!a) return;
+  const np = await askNewPassword(a.username);
+  if (np === null) return;
+  try {
+    const res = await apiPost({ action: "resetPassword", kind: "admin", id: a.username, newPass: np });
+    toast(res.message, res.status === "success" ? "ok" : "err");
+  } catch (e) { toast("เชื่อมต่อ server ไม่ได้: " + e.message, "err"); }
 }
 
 /* ---------- จำสถานะข้าม F5: เปิดหน้ามาแล้วล็อกอินค้างไว้ + อยู่ tab เดิม ---------- */
