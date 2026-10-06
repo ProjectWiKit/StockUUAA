@@ -280,7 +280,7 @@
             <div style="text-align:right"><button class="btn-ghost btn-sm" onclick="backToSites()">← กลับรายชื่อไซต์</button></div>
           </div>
           <table>
-            <thead><tr><th>รหัส</th><th>ชื่ออุปกรณ์</th><th>ค้างคืน</th><th>จัดการ</th></tr></thead>
+            <thead><tr><th>รหัส</th><th>ชื่ออุปกรณ์ / รุ่น</th><th>ค้างคืน</th><th>จัดการ</th></tr></thead>
             <tbody id="returnTableBody"><tr><td colspan="4" class="empty">-</td></tr></tbody>
           </table>
           <button id="returnBtn" class="btn-success" style="margin-top:14px" onclick="submitReturn()">ยืนยันการคืนไซต์นี้เข้าคลัง</button>
@@ -371,7 +371,7 @@
 
 <script>
 /* ★★★ ตั้งค่า: วาง Web App URL (/exec) ที่ได้จาก Deploy ทับบรรทัดนี้ ★★★ */
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzF7oZ1nrJsade9bdq5xqlRFZzeehxQUwE0E8erqoOZp-Qzqo2ECZB9LIGLzZjKqevt/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx9yiqD5iJ-Z5JmqysprG92BPaBmj9N5huyop9bI8NvEe9If43Hbg8VV9vhXiJHx52E/exec"; // <-- ใส่ URL ที่ Deploy จาก Apps Script
 
 /* คีย์ข้อความใน log ต้องตรงกับ code.gs:
    เบิก/ยืม -> "ยืมอุปกรณ์ (ต้องนำกลับมาคืน)" | คืนของ -> "📥 คืนอุปกรณ์เข้าคลัง (...)"
@@ -501,7 +501,8 @@ async function loadData() {
   globalLogs = data.stockLogs || [];
   globalOutstanding = (data.outstanding || []).map((r) => ({
     site: r.site, siteKey: String(r.site || "").toLowerCase(),
-    id: r.id, name: r.name || r.id, qty: r.qty, unit: r.unit || "ชิ้น"
+    id: r.id, serial: r.serial || "-",
+    name: r.name || r.id, qty: r.qty, unit: r.unit || "ชิ้น"
   }));
   globalLogTotal = data.logTotal || globalLogs.length;
   globalLogTruncated = !!data.logTruncated;
@@ -881,13 +882,15 @@ function loadReturnItems() {
   const current = siteCache.find((s) => s.key === selectedSiteKey);
 
   if (current) {
-    // ชั้น 2: ชุดอุปกรณ์ของไซต์เดียว
+    // ชั้น 2: ชุดอุปกรณ์ของไซต์เดียว (แยกรายรุ่น เพื่อให้รู้ว่าต้องคืนชิ้นไหน)
     list.classList.add("hidden");
     detail.classList.remove("hidden");
     $("siteDetailTitle").textContent = `ไซต์ ${current.site} — ${current.count} รายการ (${current.total} ชิ้น)`;
     returnCart = current.items;
     tb.innerHTML = returnCart.map((o, i) =>
-      `<tr><td><b>${esc(o.id)}</b></td><td class="left">${esc(o.name)}</td><td><b>${o.qty}</b></td>` +
+      `<tr><td><b>${esc(o.id)}</b></td><td class="left">${esc(o.name)}` +
+      (o.serial !== "-" ? `<br><span class="badge b-slate">รุ่น: ${esc(o.serial)}</span>` : "") +
+      `</td><td><b>${o.qty}</b></td>` +
       `<td><button class="btn-success btn-sm" onclick="submitSingleReturn(${i})">คืนชิ้นนี้</button></td></tr>`
     ).join("");
   } else {
@@ -915,7 +918,7 @@ async function submitSingleReturn(i) {
   try {
     const res = await apiPost({
       action: "returnEquipment", siteId: o.site, userName: currentUser,
-      returnItems: [{ id: o.id, returnQty: o.qty }]
+      returnItems: [{ id: o.id, returnQty: o.qty, serial: o.serial }]
     });
     toast(res.message, res.status === "success" ? "ok" : "err");
     if (res.status === "success") { await loadData(); loadReturnItems(); }
@@ -933,7 +936,7 @@ async function submitReturn() {
   try {
     const res = await apiPost({
       action: "returnEquipment", siteId: site, userName: currentUser,
-      returnItems: returnCart.map((o) => ({ id: o.id, returnQty: o.qty }))
+      returnItems: returnCart.map((o) => ({ id: o.id, returnQty: o.qty, serial: o.serial }))
     });
     toast(res.message, res.status === "success" ? "ok" : "err");
     if (res.status === "success") { returnCart = []; selectedSiteKey = null; await loadData(); loadReturnItems(); await uploadPhotos("returnPhotos", "returnPreview", "return", site); }
@@ -973,7 +976,8 @@ function printReturn() {
   if (!selectedSiteKey || !returnCart || returnCart.length === 0) { toast("ไม่มีรายการสำหรับพิมพ์", "err"); return; }
   printDoc("ใบคืนอุปกรณ์เข้าคลัง", returnCart[0].site, returnCart.map((o) => ({
     id: o.id, name: o.name, qty: o.qty,
-    unit: (globalStock[o.id] && globalStock[o.id].unit) || "ชิ้น", serial: "", category: ""
+    unit: (globalStock[o.id] && globalStock[o.id].unit) || "ชิ้น",
+    serial: (o.serial && o.serial !== "-") ? o.serial : "", category: ""
   })));
 }
 
