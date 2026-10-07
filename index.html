@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JKP Engineering - Field Checklist &amp; Stock Control</title>
+<link rel="icon" href="logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -24,12 +25,13 @@
   /* ===== Hero ===== */
   .hero{
     background:linear-gradient(120deg,var(--primary-dark),var(--primary) 55%,var(--accent));
-    color:#fff;border-radius:var(--radius);padding:26px 28px;margin-bottom:20px;
-    box-shadow:var(--shadow);position:relative;overflow:hidden;
+    color:#fff;border-radius:var(--radius);padding:22px 26px;margin-bottom:20px;
+    box-shadow:var(--shadow);display:flex;align-items:center;gap:16px;
   }
-  .hero::after{
-    content:"📡";position:absolute;right:22px;top:50%;transform:translateY(-50%);
-    font-size:72px;opacity:.18;
+  .hero-logo{
+    width:60px;height:60px;object-fit:contain;flex-shrink:0;
+    background:#fff;border-radius:14px;padding:6px;
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
   }
   .hero h1{margin:0;font-size:22px;font-weight:700}
   .hero p{margin:6px 0 0;font-size:13px;opacity:.9;font-weight:300}
@@ -147,7 +149,7 @@
   .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);
     border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
   @keyframes spin{to{transform:rotate(360deg)}}
-  @media (max-width:560px){ .hero h1{font-size:18px} .hero::after{font-size:48px} }
+  @media (max-width:560px){ .hero h1{font-size:18px} .hero-logo{width:46px;height:46px} }
 
   /* ===== ใบพิมพ์ (แสดงเฉพาะตอนสั่งพิมพ์) ===== */
   #printArea{display:none}
@@ -171,8 +173,11 @@
 <div class="wrap">
 
   <div class="hero">
-    <h1>📡 JKP Engineering</h1>
-    <p>ระบบจัดการอุปกรณ์ · เช็คลิสต์หน้างาน · สต็อกคงคลัง</p>
+    <img class="hero-logo" src="logo.png" alt="JKP" onerror="this.style.display='none'">
+    <div>
+      <h1>JKP Engineering</h1>
+      <p>ระบบจัดการอุปกรณ์ · เช็คลิสต์หน้างาน · สต็อกคงคลัง</p>
+    </div>
   </div>
 
   <div id="toasts"></div>
